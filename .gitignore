@@ -6,6 +6,8 @@ server/node_modules/
 # Build output
 client/dist/
 server/dist/
+client/.vite/
+server/.vite/
 
 # Environment files
 .env

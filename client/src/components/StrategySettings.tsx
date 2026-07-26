@@ -201,26 +201,20 @@ export function StrategySettings() {
               {/* Exclude digits */}
               <div>
                 <span className="text-[10px] font-semibold text-dark-300 block mb-1.5">Exclude Digits</span>
-                <div className="flex items-center gap-1">
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-                    <button
-                      key={d}
-                      onClick={() => {
-                        const next = config.excludeDigits.includes(d)
-                          ? config.excludeDigits.filter((x) => x !== d)
-                          : [...config.excludeDigits, d].sort();
-                        update('excludeDigits', next);
-                      }}
-                      className={`w-7 h-7 rounded text-xs font-mono font-bold transition-colors ${
-                        config.excludeDigits.includes(d)
-                          ? 'bg-red-900/40 text-red-400 border border-red-700/40'
-                          : 'bg-dark-700 text-dark-300 border border-dark-500 hover:border-dark-400'
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="text"
+                  value={config.excludeDigits.join(', ')}
+                  placeholder="e.g. 0, 1, 2"
+                  onChange={(e) => {
+                    const digits = e.target.value
+                      .split(/[,\s]+/)
+                      .map((s) => parseInt(s.trim(), 10))
+                      .filter((n) => !isNaN(n) && n >= 0 && n <= 9);
+                    const unique = [...new Set(digits)].sort();
+                    update('excludeDigits', unique);
+                  }}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-dark-700 border border-dark-500 text-xs font-mono font-bold text-dark-200 placeholder-dark-500 focus:outline-none focus:border-red-700/40 focus:ring-1 focus:ring-red-700/20 transition-colors"
+                />
               </div>
 
               <button

@@ -327,34 +327,37 @@ export function TradingControls({ state }: TradingControlsProps) {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-semibold text-dark-300">Take Profit</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-mono font-bold text-dark-200">
-                        {config.takeProfit !== null ? `${config.takeProfit.toFixed(0)}` : '—'}
-                      </span>
-                      <button
-                        onClick={() =>
-                          updateConfigField('takeProfit', config.takeProfit === null ? config.baseStake * 2 : null)
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <span className="text-[9px] text-dark-400 font-medium">Enabled</span>
+                      <input
+                        type="checkbox"
+                        checked={config.takeProfit !== null}
+                        onChange={(e) =>
+                          updateConfigField(
+                            'takeProfit',
+                            e.target.checked ? config.baseStake * 2 : null,
+                          )
                         }
-                        className={`text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider transition-colors ${
-                          config.takeProfit === null
-                            ? 'bg-dark-600 text-dark-300 border border-dark-500 hover:border-dark-400'
-                            : 'bg-amber-900/30 text-amber-400 border border-amber-700/40'
-                        }`}
-                      >
-                        {config.takeProfit === null ? 'Disabled' : 'Enabled'}
-                      </button>
-                    </div>
+                        className="w-3.5 h-3.5 rounded border-dark-500 bg-dark-700 text-amber-500 focus:ring-amber-700/30 focus:ring-offset-0 cursor-pointer"
+                      />
+                    </label>
                   </div>
                   {config.takeProfit !== null && (
-                    <SliderField
-                      label=""
-                      value={config.takeProfit}
-                      min={1}
-                      max={Math.max(config.stopLoss * 2, 100)}
-                      step={1}
-                      prefix="$"
-                      onChange={(v) => updateConfigField('takeProfit', v)}
-                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-dark-500 font-mono">$</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={config.takeProfit ?? ''}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          if (!isNaN(v) && v >= 0) {
+                            updateConfigField('takeProfit', v);
+                          }
+                        }}
+                        className="flex-1 px-2.5 py-1.5 rounded-lg bg-dark-700 border border-dark-500 text-xs font-mono font-bold text-dark-200 focus:outline-none focus:border-amber-700/40 focus:ring-1 focus:ring-amber-700/20 transition-colors"
+                      />
+                    </div>
                   )}
                 </div>
 
@@ -410,55 +413,41 @@ export function TradingControls({ state }: TradingControlsProps) {
                 {/* ── Currency selector ─────────────────────────────── */}
                 <div>
                   <span className="text-[10px] font-semibold text-dark-300 block mb-1.5">Currency</span>
-                  <div className="flex items-center gap-1">
-                    {['USD', 'EUR', 'GBP', 'AUD', 'BTC', 'ETH'].map((ccy) => (
-                      <button
-                        key={ccy}
-                        onClick={() => updateConfigField('currency', ccy)}
-                        className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-colors ${
-                          config.currency === ccy
-                            ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-700/40'
-                            : 'bg-dark-700 text-dark-300 border border-dark-500 hover:border-dark-400'
-                        }`}
-                      >
-                        {ccy}
-                      </button>
-                    ))}
-                  </div>
+                  <input
+                    type="text"
+                    value={config.currency}
+                    onChange={(e) => updateConfigField('currency', e.target.value.toUpperCase())}
+                    maxLength={5}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-dark-700 border border-dark-500 text-xs font-mono font-bold text-dark-200 placeholder-dark-500 focus:outline-none focus:border-emerald-700/40 focus:ring-1 focus:ring-emerald-700/20 transition-colors"
+                  />
                 </div>
 
                 {/* ── Duration Ticks per market family ──────────────────── */}
                 <div className="px-3 py-2 rounded-lg bg-dark-700/30 border border-dark-500">
                   <span className="text-[10px] font-semibold text-dark-300 block mb-2">Duration (ticks)</span>
                   <div className="space-y-2">
-                    {/* Editable rows */}
                     {(['Volatility', 'Jump'] as const).map((family) => (
-                      <div key={family} className="flex items-center justify-between">
-                        <span className="text-[10px] text-dark-400">{family}</span>
-                        <div className="flex items-center gap-1">
-                          {[1, 2, 3, 5, 10].map((n) => (
-                            <button
-                              key={n}
-                              onClick={() => {
-                                if (!config) return;
-                                const next = {
-                                  ...config,
-                                  durationTicks: { ...config.durationTicks, [family]: n },
-                                };
-                                setConfig(next);
-                                saveToStorage(next);
-                                setConfigDirty(true);
-                              }}
-                              className={`w-7 h-7 rounded text-xs font-mono font-bold transition-colors ${
-                                config.durationTicks[family] === n
-                                  ? 'bg-blue-900/40 text-blue-400 border border-blue-700/40'
-                                  : 'bg-dark-700 text-dark-300 border border-dark-500 hover:border-dark-400'
-                              }`}
-                            >
-                              {n}
-                            </button>
-                          ))}
-                        </div>
+                      <div key={family} className="flex items-center justify-between gap-3">
+                        <span className="text-[10px] text-dark-400 shrink-0">{family}</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={config.durationTicks[family]}
+                          onChange={(e) => {
+                            if (!config) return;
+                            const n = parseInt(e.target.value, 10);
+                            if (isNaN(n) || n < 1) return;
+                            const next = {
+                              ...config,
+                              durationTicks: { ...config.durationTicks, [family]: n },
+                            };
+                            setConfig(next);
+                            saveToStorage(next);
+                            setConfigDirty(true);
+                          }}
+                          className="w-16 px-2 py-1 rounded-lg bg-dark-700 border border-dark-500 text-xs font-mono font-bold text-dark-200 text-right focus:outline-none focus:border-blue-700/40 focus:ring-1 focus:ring-blue-700/20 transition-colors"
+                        />
                       </div>
                     ))}
                     {/* Read-only row for 1s Volatility indices */}
@@ -477,25 +466,19 @@ export function TradingControls({ state }: TradingControlsProps) {
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold text-dark-300">Max Concurrent</span>
-                    <span className="text-[11px] font-mono font-bold text-dark-200">{config.maxConcurrent}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <button
-                        key={n}
-                        onClick={() => updateConfigField('maxConcurrent', n)}
-                        className={`w-7 h-7 rounded text-xs font-mono font-bold transition-colors ${
-                          config.maxConcurrent === n
-                            ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-700/40'
-                            : 'bg-dark-700 text-dark-300 border border-dark-500 hover:border-dark-400'
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
+                  <span className="text-[10px] font-semibold text-dark-300 block mb-1.5">Max Concurrent</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={config.maxConcurrent}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      if (isNaN(n) || n < 1) return;
+                      updateConfigField('maxConcurrent', Math.min(n, 20));
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-dark-700 border border-dark-500 text-xs font-mono font-bold text-dark-200 placeholder-dark-500 focus:outline-none focus:border-emerald-700/40 focus:ring-1 focus:ring-emerald-700/20 transition-colors"
+                  />
                 </div>
 
                 <div className="flex items-center gap-2">
