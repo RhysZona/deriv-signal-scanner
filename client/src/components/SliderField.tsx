@@ -26,36 +26,38 @@ export function SliderField({ label, value, min, max, step, prefix, suffix, onCh
 
   return (
     <div>
-      {label && (
-        <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-1">
+        {label ? (
           <span className="text-[10px] font-semibold text-dark-300">{label}</span>
-          {editing ? (
-            <input
-              type="number"
-              autoFocus
-              step={step}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onBlur={commitInput}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitInput();
-                if (e.key === 'Escape') setEditing(false);
-              }}
-              className="w-20 px-1.5 py-0.5 rounded bg-dark-700 border border-dark-500 text-[11px] font-mono font-bold text-dark-200 text-right focus:outline-none focus:border-emerald-700/40"
-            />
-          ) : (
-            <button
-              onClick={() => {
-                setInputText(String(value));
-                setEditing(true);
-              }}
-              className="text-[11px] font-mono font-bold text-dark-200 hover:text-emerald-400 transition-colors cursor-text"
-            >
-              {prefix ?? ''}{value}{suffix ?? ''}
-            </button>
-          )}
-        </div>
-      )}
+        ) : (
+          <span />
+        )}
+        {editing ? (
+          <input
+            type="number"
+            autoFocus
+            step={step}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onBlur={commitInput}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitInput();
+              if (e.key === 'Escape') setEditing(false);
+            }}
+            className="w-20 px-1.5 py-0.5 rounded bg-dark-700 border border-dark-500 text-[11px] font-mono font-bold text-dark-200 text-right focus:outline-none focus:border-emerald-700/40"
+          />
+        ) : (
+          <button
+            onClick={() => {
+              setInputText(String(value));
+              setEditing(true);
+            }}
+            className="text-[11px] font-mono font-bold text-dark-200 hover:text-emerald-400 transition-colors cursor-text"
+          >
+            {prefix ?? ''}{value}{suffix ?? ''}
+          </button>
+        )}
+      </div>
       <div className="relative h-6 flex items-center">
         <input
           type="range"

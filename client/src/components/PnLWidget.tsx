@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import type { TraderState } from '../types';
 
 interface PnLWidgetProps {
@@ -57,10 +58,7 @@ export function PnLWidget({ state }: PnLWidgetProps) {
 
       {/* Martingale & stake info */}
       <div className="mt-3 grid grid-cols-2 gap-3">
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-dark-700/30">
-          <span className="text-[10px] text-dark-300">Stake</span>
-          <span className="text-[11px] font-mono font-bold text-dark-200">${state.currentStake.toFixed(2)}</span>
-        </div>
+        <StakeEditor currentStake={state.currentStake} />
         <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-dark-700/30">
           <span className="text-[10px] text-dark-300">Martingale</span>
           <span className="text-[11px] font-mono font-bold text-dark-200">
@@ -77,6 +75,69 @@ export function PnLWidget({ state }: PnLWidgetProps) {
             <span className="font-semibold">Disarmed:</span> {state.lastDisarmReason}
           </p>
         </div>
+      )}
+    </div>
+  );
+}
+
+function StakeEditor({ currentStake }: { currentStake: number }) {
+  const [editing, setEditing] = useState(false);
+  const [inputText, setInputText] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const commit = useCallback(async () => {
+    const n = parseFloat(inputText);
+    if (isNaN(n) || n < 0.1) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await fetch('/api/trading/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseStake: Math.min(n, 100) }),
+      });
+    } catch {
+      // silently fail — next refresh will correct the display
+    }
+    setSaving(false);
+    setEditing(false);
+  }, [inputText]);
+
+  return (
+    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-dark-700/30">
+      <span className="text-[10px] text-dark-300">Stake</span>
+      {editing ? (
+        <input
+          type="number"
+          autoFocus
+          step={0.1}
+          min={0.1}
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            if (e.key === 'Escape') setEditing(false);
+          }}
+          className="w-16 px-1 py-0.5 rounded bg-dark-700 border border-dark-500 text-[11px] font-mono font-bold text-dark-200 text-right focus:outline-none focus:border-emerald-700/40"
+        />
+      ) : (
+        <button
+          onClick={() => {
+            setInputText(String(currentStake));
+            setEditing(true);
+          }}
+          className="text-[11px] font-mono font-bold text-dark-200 hover:text-emerald-400 transition-colors cursor-text"
+          disabled={saving}
+        >
+          {saving ? (
+            <span className="inline-block w-3 h-3 border-2 border-dark-400 border-t-emerald-400 rounded-full animate-spin" />
+          ) : (
+            `$${currentStake.toFixed(2)}`
+          )}
+        </button>
       )}
     </div>
   );
