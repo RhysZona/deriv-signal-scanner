@@ -89,18 +89,19 @@ export function getTradingConfig(): TradingConfig {
 }
 
 export function updateTradingConfig(patch: Partial<TradingConfig>): TradingConfig {
-  // Keep the "TP same as stake" rule: if the base stake changes and no explicit
-  // takeProfit is given in the same update, mirror TP onto the new stake.
-  const takeProfit =
-    patch.takeProfit === undefined && patch.baseStake !== undefined
-      ? patch.baseStake
-      : patch.takeProfit ?? config.takeProfit;
-  config = {
-    ...config,
-    ...patch,
-    takeProfit,
-    durationTicks: { ...config.durationTicks, ...patch.durationTicks },
-  };
+  // Determine takeProfit:
+  // - If explicitly provided in the request, use it (even if null = disabled)
+  // - If baseStake actually changed and no takeProfit given, mirror TP to new stake
+  // - Otherwise keep the current value
+  if ('takeProfit' in patch) {
+    config = { ...config, ...patch, takeProfit: patch.takeProfit ?? null };
+  } else if (patch.baseStake !== undefined && patch.baseStake !== config.baseStake) {
+    // "TP same as stake" rule — only when baseStake actually changes
+    config = { ...config, ...patch, takeProfit: patch.baseStake };
+  } else {
+    config = { ...config, ...patch };
+  }
+  config.durationTicks = { ...config.durationTicks, ...patch.durationTicks };
   return config;
 }
 
