@@ -1,0 +1,6 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd deriv-signal-scanner/server && npm install"
+
+[deploy]
+startCommand = "cd deriv-signal-scanner/server && npm start"
