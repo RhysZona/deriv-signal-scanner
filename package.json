@@ -1,0 +1,9 @@
+{
+  "name": "deriv-signal-scanner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "cd client && npm install && npm run build && cd ../server && npm install",
+    "start": "cd server && npm start"
+  }
+}
