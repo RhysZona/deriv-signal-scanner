@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ScanResult, TradeSetup, TraderState, TradeRecord } from '../types';
+import type { ScanResult, TradeSetup, TraderState, TradeRecord, MarketSymbol } from '../types';
 
 interface SignalsState {
   connected: boolean;
@@ -11,8 +11,9 @@ interface SignalsState {
   error: string | null;
   traderState: TraderState | null;
   tradeHistory: TradeRecord[];
-  /** True while the error handler's reconnect timer is counting down. */
   isReconnecting: boolean;
+  traderTradeCount: number;
+  availableMarkets: MarketSymbol[];
 }
 
 export function useSignals() {
@@ -27,6 +28,8 @@ export function useSignals() {
     traderState: null,
     tradeHistory: [],
     isReconnecting: false,
+    traderTradeCount: 0,
+    availableMarkets: [],
   });
 
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -101,7 +104,11 @@ export function useSignals() {
       if (!mountedRef.current) return;
       try {
         const data = JSON.parse(event.data);
-        setState(prev => ({ ...prev, traderState: data }));
+        setState(prev => ({
+          ...prev,
+          traderState: data,
+          traderTradeCount: (data.wins ?? 0) + (data.losses ?? 0),
+        }));
       } catch (e) {
         console.error('[SSE] Trade state parse error:', e);
       }
@@ -113,14 +120,33 @@ export function useSignals() {
       try {
         const data = JSON.parse(event.data);
         if (data.record) {
-          setState(prev => ({
-            ...prev,
-            traderState: data.state ?? prev.traderState,
-            tradeHistory: [data.record, ...prev.tradeHistory].slice(0, 50),
-          }));
+          setState(prev => {
+            const newState = {
+              ...prev,
+              traderState: data.state ?? prev.traderState,
+              tradeHistory: [data.record, ...prev.tradeHistory].slice(0, 50),
+            };
+            // Update trade count from the latest state
+            if (data.state) {
+              newState.traderTradeCount = (data.state.wins ?? 0) + (data.state.losses ?? 0);
+            }
+            return newState;
+          });
         }
       } catch (e) {
         console.error('[SSE] Trade parse error:', e);
+      }
+    });
+
+    es.addEventListener('markets', (event) => {
+      if (!mountedRef.current) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (Array.isArray(data.markets)) {
+          setState(prev => ({ ...prev, availableMarkets: data.markets }));
+        }
+      } catch (e) {
+        console.error('[SSE] Markets parse error:', e);
       }
     });
 
@@ -129,7 +155,6 @@ export function useSignals() {
       setState(prev => ({ ...prev, connected: false, feedDegraded: false, isReconnecting: true }));
       es.close();
 
-      // Reconnect after a delay
       reconnectTimer.current = setTimeout(() => {
         if (mountedRef.current) {
           setState(prev => ({ ...prev, isReconnecting: false }));
@@ -139,6 +164,39 @@ export function useSignals() {
     });
   }, []);
 
+  // Fetch market list on mount
+  useEffect(() => {
+    fetch('/api/markets')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.markets) {
+          setState(prev => ({ ...prev, availableMarkets: data.markets }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch trading status periodically
+  useEffect(() => {
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch('/api/trading/status');
+        const data = await res.json();
+        if (data.state) {
+          setState(prev => ({
+            ...prev,
+            traderState: data.state,
+            traderTradeCount: (data.state.wins ?? 0) + (data.state.losses ?? 0),
+          }));
+        }
+      } catch {
+        // ignore
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  // SSE connection lifecycle
   useEffect(() => {
     mountedRef.current = true;
     connect();

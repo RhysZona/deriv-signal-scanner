@@ -187,6 +187,39 @@ app.put('/api/trading/config', (req, res) => {
   res.json({ status: 'ok', config: next, applied: Object.keys(patch) });
 });
 
+// ── Auth: set Deriv API token (Section 3) ───────────────────────────────────
+app.post('/api/auth/token', async (req, res) => {
+  const { token } = req.body ?? {};
+  if (!token || typeof token !== 'string') {
+    return res.json({ status: 'error', error: 'No token provided' });
+  }
+  try {
+    // Set the token and authorize
+    process.env.DERIV_API_TOKEN = token;
+    // Reconnect with the new token
+    await derivConnection.disconnect();
+    await derivConnection.connect();
+    const account = derivConnection.getAccount();
+    if (account) {
+      console.log('[Auth] Token authorized:', account.loginid, account.isVirtual ? 'DEMO' : 'REAL');
+      res.json({ status: 'ok', account });
+    } else {
+      res.json({ status: 'error', error: 'Authorize failed — check token' });
+    }
+  } catch (e: any) {
+    console.error('[Auth] Error:', e?.message ?? e);
+    res.json({ status: 'error', error: e?.message ?? 'Auth failed' });
+  }
+});
+
+// ── Revoke token / disconnect (Section 3.3) ─────────────────────────────────
+app.post('/api/auth/disconnect', async (_req, res) => {
+  delete process.env.DERIV_API_TOKEN;
+  derivConnection.clearAuth();
+  await derivConnection.disconnect();
+  res.json({ status: 'ok' });
+});
+
 // ── Catch-all for SPA routes ────────────────────────────────────────────────
 app.get('*', (_req, res) => {
   res.sendFile(path.join(clientDist, 'index.html'));
