@@ -35,23 +35,10 @@ class DerivConnection {
   private statusHandlers = new Set<StatusHandler>();
 
   // Optional auth token — enables authenticated calls (trading) in future.
-  // Re-read from process.env at connect time so the token can be updated at runtime
-  // via the /api/auth/token endpoint without restarting the server.
   private authToken: string | null = process.env.DERIV_API_TOKEN ?? null;
 
   // Populated after a successful authorize; null when not authenticated.
   private account: { loginid: string; isVirtual: boolean; currency: string; balance: number } | null = null;
-
-  /** Set/update the auth token. Used by the /api/auth/token endpoint. */
-  setToken(token: string | null): void {
-    this.authToken = token;
-  }
-
-  /** Clear the auth token locally. */
-  clearAuth(): void {
-    this.authToken = null;
-    this.account = null;
-  }
 
   // contract_id → handler awaiting that contract's proposal_open_contract updates
   private contractHandlers: Map<number, (parsed: any) => void> = new Map();
@@ -79,9 +66,6 @@ class DerivConnection {
         this.isConnected = true;
         this.connectPromise = null;
         this.emitStatus();
-
-        // Re-read token from env at connect time for runtime updates
-        this.authToken = process.env.DERIV_API_TOKEN ?? this.authToken;
 
         // Authorize first if a token is configured (no-op for read-only use).
         if (this.authToken) {

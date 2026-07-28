@@ -116,7 +116,10 @@ export function SignalCard({ signal, isLive, rank }: SignalCardProps) {
         <span className="text-[9px] font-semibold uppercase tracking-wider text-dark-400 mb-2 block">Digit Distribution</span>
         <DigitDistribution
           digits={signal.allDigits?.length > 0 ? [...signal.allDigits].sort((a, b) => a.digit - b.digit) : []}
-          marketKey={signal.marketSymbol}
+          tradeType={signal.tradeType}
+          entryDigit={signal.entryDigit}
+          quietDigits={signal.quietDigits}
+          validConfirmationDigits={signal.validConfirmationDigits}
         />
       </div>
     </div>
