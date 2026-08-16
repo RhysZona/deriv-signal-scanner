@@ -34,6 +34,13 @@ class DerivConnection {
   private feedDegraded = false;
   private statusHandlers = new Set<StatusHandler>();
 
+  // Live-stream availability. Deriv refuses the `ticks` stream outright in some
+  // environments (InvalidSymbol for EVERY symbol — even forex — while
+  // ticks_history still works). Track that so we surface it once, honestly,
+  // instead of one misleading per-symbol error per scan.
+  private liveStreamBlocked = false;
+  private liveStreamBlockLogged = false;
+
   async connect(): Promise<void> {
     if (this.isConnected) return;
     if (this.connectPromise) return this.connectPromise;
@@ -143,9 +150,9 @@ class DerivConnection {
   /** Re-send `ticks` subscribe for every symbol we still have handlers for. */
   private resubscribeAll() {
     for (const symbol of this.subscriptions.keys()) {
-      this.send({ ticks: symbol, subscribe: 1 }).catch((err) =>
-        console.error(`[DerivWS] Re-subscribe ${symbol} failed:`, err.message),
-      );
+      this.send({ ticks: symbol, subscribe: 1 })
+        .then(() => this.markStreamAvailable())
+        .catch((err) => this.handleSubscribeError(symbol, err));
     }
   }
 
@@ -182,20 +189,22 @@ class DerivConnection {
 
     // Only send the subscribe request once per symbol.
     if (isNew) {
-      this.send({ ticks: symbol, subscribe: 1 }).catch((err) => {
-        console.error(`[DerivWS] Failed to subscribe to ${symbol}:`, err.message);
-        // Clean up the failed subscription so it can be retried on the next scan.
-        // The handler was added above; remove it and delete the symbol from the
-        // map so checkFeedHealth doesn't falsely flag the feed as degraded while
-        // waiting on a subscription that will never deliver ticks.
-        const handlers = this.subscriptions.get(symbol);
-        if (handlers) {
-          handlers.delete(handler);
-          if (handlers.size === 0) {
-            this.subscriptions.delete(symbol);
+      this.send({ ticks: symbol, subscribe: 1 })
+        .then(() => this.markStreamAvailable())
+        .catch((err) => {
+          this.handleSubscribeError(symbol, err);
+          // Clean up the failed subscription so it can be retried on the next scan.
+          // The handler was added above; remove it and delete the symbol from the
+          // map so checkFeedHealth doesn't falsely flag the feed as degraded while
+          // waiting on a subscription that will never deliver ticks.
+          const handlers = this.subscriptions.get(symbol);
+          if (handlers) {
+            handlers.delete(handler);
+            if (handlers.size === 0) {
+              this.subscriptions.delete(symbol);
+            }
           }
-        }
-      });
+        });
     }
 
     return () => {
@@ -210,6 +219,50 @@ class DerivConnection {
         if (subId) this.send({ forget: subId }).catch(() => {});
       }
     };
+  }
+
+  // ── Subscribe failure / stream availability ─────────────────────────────────
+
+  /**
+   * Surface a subscribe failure. When Deriv reports "InvalidSymbol" here, it is
+   * NOT a bad symbol: the scanner only subscribes to markets whose ticks_history
+   * already returned data, and in some environments Deriv refuses the whole
+   * `ticks` stream (every symbol, even forex, comes back InvalidSymbol). Treating
+   * it as a bad symbol would wrongly prune valid markets, so we log it ONCE and
+   * flag the feed as genuinely degraded — the scanner keeps working on historical
+   * data and recovers automatically if the stream becomes available. Genuine
+   * per-request failures (timeouts, network errors) still log as errors.
+   */
+  private handleSubscribeError(symbol: string, err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/invalid/i.test(msg)) {
+      if (!this.liveStreamBlockLogged) {
+        this.liveStreamBlocked = true;
+        this.liveStreamBlockLogged = true;
+        this.feedDegraded = true;
+        this.emitStatus();
+        console.warn(
+          `[DerivWS] Live ticks stream refused for ${symbol} (${msg}). This connection ` +
+          `can fetch historical data but not live ticks — signals keep scanning and ` +
+          `ranking, but live confirmation monitoring stays off until the stream is ` +
+          `available again.`,
+        );
+      }
+      return;
+    }
+    console.error(`[DerivWS] Failed to subscribe to ${symbol}:`, msg);
+  }
+
+  /** Called when a live ticks subscribe succeeds — the stream is usable again. */
+  private markStreamAvailable() {
+    if (!this.liveStreamBlocked) return;
+    this.liveStreamBlocked = false;
+    this.liveStreamBlockLogged = false;
+    if (this.feedDegraded) {
+      this.feedDegraded = false;
+      this.emitStatus();
+    }
+    console.log('[DerivWS] Live ticks stream available — resuming live monitoring');
   }
 
   // ── Feed health ────────────────────────────────────────────────────────────
@@ -227,8 +280,9 @@ class DerivConnection {
     if (this.subscriptions.size === 0) {
       // No active subscriptions = nothing to monitor. Clear any stale degraded
       // flag so the UI doesn't show a misleading "Feed Stalled" after all
-      // subscriptions have been torn down (e.g. signals expired).
-      if (this.feedDegraded) {
+      // subscriptions have been torn down (e.g. signals expired) — UNLESS the
+      // live stream itself is refused, in which case the stall is real.
+      if (this.feedDegraded && !this.liveStreamBlocked) {
         this.feedDegraded = false;
         this.emitStatus();
       }

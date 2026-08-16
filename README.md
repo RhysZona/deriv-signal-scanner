@@ -453,6 +453,7 @@ WebSocket connection manager for Deriv's API (`wss://ws.derivws.com/websockets/v
 - **Request/response matching** via `req_id` — each `send()` returns a Promise that resolves when the matching response arrives
 - **Subscription management** — `subscribe(symbol, handler)` returns an unsubscribe function. Uses Deriv's `subscription.id` for correct `forget` calls
 - **Feed health monitoring** — flags as "degraded" if no tick arrives on any subscription within 20s
+- **Live-stream refusal handling** — in some environments Deriv refuses the whole `ticks` stream (every symbol — even forex — returns `InvalidSymbol` while `ticks_history` still works). Detected once and logged as a single clear warning, the feed is flagged degraded, and the scanner keeps running on historical data without pruning valid symbols; it recovers automatically if the stream becomes available again
 - **Re-subscribe on reconnect** — automatically re-sends `ticks` subscribe for all active subscriptions when the WebSocket reconnects
 
 **Key methods:**
