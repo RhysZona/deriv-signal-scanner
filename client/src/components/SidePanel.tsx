@@ -1,10 +1,6 @@
-import type { TradeSetup, TraderState, TradeRecord } from '../types';
+import type { TradeSetup } from '../types';
 import { ScannerStatus } from './ScannerStatus';
 import { LiveMonitor } from './LiveMonitor';
-import { TradingControls } from './TradingControls';
-import { PnLWidget } from './PnLWidget';
-import { TradeHistory } from './TradeHistory';
-import { StrategySettings } from './StrategySettings';
 import { MarketOverview } from './MarketOverview';
 
 interface SidePanelProps {
@@ -13,8 +9,6 @@ interface SidePanelProps {
   lastScanTime: number | null;
   marketsCount: number | null;
   liveUpdates: TradeSetup[] | null;
-  traderState: TraderState | null;
-  tradeHistory: TradeRecord[];
   signals: TradeSetup[];
 }
 
@@ -24,8 +18,6 @@ export function SidePanel({
   lastScanTime,
   marketsCount,
   liveUpdates,
-  traderState,
-  tradeHistory,
   signals,
 }: SidePanelProps) {
   return (
@@ -41,10 +33,6 @@ export function SidePanel({
         <LiveMonitor liveUpdates={liveUpdates} />
       )}
 
-      <TradingControls state={traderState} />
-      <PnLWidget state={traderState} />
-      <TradeHistory trades={tradeHistory} />
-      <StrategySettings />
       <MarketOverview signals={signals} />
     </div>
   );

@@ -1,4 +1,5 @@
 import type { DigitStats, TradeType } from '../types';
+import { DEFAULT_QUIET_THRESHOLD, useStrategyConfig } from '../hooks/useStrategyConfig';
 
 interface DigitDistributionProps {
   digits: DigitStats[];
@@ -15,8 +16,6 @@ const REQUIRED_DIGITS: Record<TradeType, number[]> = {
   UNDER_7: [7, 8, 9],
 };
 
-const THRESHOLD = 9.9;
-
 export function DigitDistribution({
   digits,
   tradeType,
@@ -25,6 +24,11 @@ export function DigitDistribution({
   validConfirmationDigits,
 }: DigitDistributionProps) {
   const required = REQUIRED_DIGITS[tradeType];
+  // Quiet threshold from the server config (polled live). Falls back to the
+  // documented server default while /api/config is loading or unreachable, so
+  // the marker is always visible and snaps to the live value once it arrives.
+  const { config } = useStrategyConfig();
+  const threshold = config?.quietThreshold ?? DEFAULT_QUIET_THRESHOLD;
   const maxBarWidth = 100;
 
   return (
@@ -72,10 +76,10 @@ export function DigitDistribution({
                 className={`h-full rounded-sm transition-all duration-500 ${barColor}`}
                 style={{ width: `${barPercent}%` }}
               />
-              {/* Threshold line */}
+              {/* Threshold line — positioned from the live quietThreshold config */}
               <div
                 className="absolute top-0 bottom-0 w-px bg-red-400/60 z-10"
-                style={{ left: `${(THRESHOLD / 20) * 100}%` }}
+                style={{ left: `${(threshold / 20) * 100}%` }}
               />
             </div>
             <span className="w-12 text-[10px] font-mono text-right text-dark-300 tabular-nums">
@@ -101,7 +105,7 @@ export function DigitDistribution({
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded bg-blue-700/40" /> Confirm
         </span>
-        <span className="border-l border-dark-600 pl-2 text-dark-500">| 9.9%</span>
+        <span className="border-l border-dark-600 pl-2 text-dark-500">| {threshold}%</span>
       </div>
     </div>
   );

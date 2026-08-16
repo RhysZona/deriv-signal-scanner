@@ -9,7 +9,6 @@ import {
   checkConfirmation,
 } from '../strategy/analyzer.ts';
 import { getConfig } from '../strategy/config.ts';
-import { trader } from '../trader/trader.ts';
 import { TradeSetup, ScanResult } from '../strategy/types.ts';
 
 export type ScanCallback = (
@@ -207,14 +206,7 @@ class Scanner {
         const setups = this.liveSetups.get(symbol);
         if (!setups) return;
 
-        const updated = setups.map((prev) => {
-          const next = checkConfirmation(prev, digit);
-          // Fire the trader exactly once, on the rising edge into `confirmed`.
-          if (next.status === 'confirmed' && prev.status !== 'confirmed') {
-            void trader.onConfirmedSignal(next);
-          }
-          return next;
-        });
+        const updated = setups.map((prev) => checkConfirmation(prev, digit));
         this.liveSetups.set(symbol, updated);
 
         if (this.lastResult) {

@@ -7,8 +7,6 @@ import { derivConnection } from './deriv/connection.ts';
 import { getMarkets } from './deriv/symbols.ts';
 import { ScanResult, TradeSetup } from './strategy/types.ts';
 import { getConfig, updateConfig, StrategyConfig } from './strategy/config.ts';
-import { getTradingConfig, updateTradingConfig, TradingConfig } from './strategy/tradingConfig.ts';
-import { trader } from './trader/trader.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -66,11 +64,6 @@ app.get('/api/signals/stream', (req, res) => {
   });
   // Forward connection/feed-health changes so the UI can warn on a stalled feed.
   const unsubscribeStatus = derivConnection.onStatus((status) => sendSSE('status', status));
-  // Forward trade events (placed/won/lost/dry-run) and trader state.
-  sendSSE('trade_state', trader.getState());
-  const unsubscribeTrade = trader.onTrade((record, state) =>
-    sendSSE('trade', { record, state }),
-  );
 
   const hb = setInterval(() => {
     try {
@@ -84,7 +77,6 @@ app.get('/api/signals/stream', (req, res) => {
     clearInterval(hb);
     unsubscribe();
     unsubscribeStatus();
-    unsubscribeTrade();
   });
 });
 
@@ -121,6 +113,7 @@ app.put('/api/config', (req, res) => {
   const allowed: (keyof StrategyConfig)[] = [
     'quietThreshold', 'excludeDigits', 'lookbackTicks',
     'confirmWithinTicks', 'scanIntervalMs', 'confirmedCooldownMs', 'marketRefreshMs',
+    'configPollMs',
   ];
   const patch: Partial<StrategyConfig> = {};
   for (const key of allowed) {
@@ -135,56 +128,6 @@ app.put('/api/config', (req, res) => {
   }
   const next = updateConfig(patch);
   res.json({ status: 'ok', config: next });
-});
-
-// ── Trading (arm / disarm / status / config) ─────────────────────────────────
-
-app.get('/api/trading/status', (_req, res) => {
-  res.json({ status: 'ok', state: trader.getState(), recentTrades: trader.getRecentTrades() });
-});
-
-app.post('/api/trading/arm', (_req, res) => {
-  const state = trader.arm();
-  res.json({ status: state.armed ? 'ok' : 'refused', state });
-});
-
-app.post('/api/trading/disarm', (_req, res) => {
-  const state = trader.disarm('manual (API)');
-  res.json({ status: 'ok', state });
-});
-
-app.post('/api/trading/reset', (_req, res) => {
-  res.json({ status: 'ok', state: trader.resetSession() });
-});
-
-app.get('/api/trading/config', (_req, res) => {
-  res.json({ status: 'ok', config: getTradingConfig() });
-});
-
-app.put('/api/trading/config', (req, res) => {
-  const body = req.body ?? {};
-  const patch: Partial<TradingConfig> = {};
-  const numeric: (keyof TradingConfig)[] = [
-    'baseStake', 'martingaleMultiplier', 'maxMartingaleSteps', 'stopLoss', 'maxConcurrent',
-  ];
-  for (const key of numeric) {
-    if (typeof body[key] === 'number' && Number.isFinite(body[key])) {
-      (patch as any)[key] = body[key];
-    }
-  }
-  if (typeof body.enabled === 'boolean') patch.enabled = body.enabled;
-  // allowReal can only be enabled here; turning it on is deliberate and logged.
-  if (typeof body.allowReal === 'boolean') patch.allowReal = body.allowReal;
-  if (typeof body.currency === 'string') patch.currency = body.currency;
-  if (body.takeProfit === null || (typeof body.takeProfit === 'number' && Number.isFinite(body.takeProfit))) {
-    patch.takeProfit = body.takeProfit;
-  }
-  if (body.durationTicks && typeof body.durationTicks === 'object') {
-    patch.durationTicks = body.durationTicks;
-  }
-  const next = updateTradingConfig(patch);
-  if (patch.allowReal === true) console.warn('[Server] allowReal ENABLED via API — real-money trades permitted');
-  res.json({ status: 'ok', config: next, applied: Object.keys(patch) });
 });
 
 // ── Catch-all for SPA routes ────────────────────────────────────────────────

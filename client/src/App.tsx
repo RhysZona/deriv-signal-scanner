@@ -1,13 +1,11 @@
 import { useSignals } from './hooks/useSignals';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
-import { ToastProvider } from './components/Toast';
 
 export default function App() {
-  const { connected, feedDegraded, isReconnecting, scanResult, liveUpdates, lastScanTime, totalSignals, marketsCount, traderState, tradeHistory } = useSignals();
+  const { connected, feedDegraded, isReconnecting, scanResult, liveUpdates, lastScanTime, totalSignals, marketsCount } = useSignals();
 
   return (
-    <ToastProvider>
     <div className="min-h-screen bg-dark-900">
       {/* Scan line animation */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.02]">
@@ -30,8 +28,6 @@ export default function App() {
           liveUpdates={liveUpdates}
           lastScanTime={lastScanTime}
           marketsCount={marketsCount}
-          traderState={traderState}
-          tradeHistory={tradeHistory}
         />
       </main>
 
@@ -45,6 +41,5 @@ export default function App() {
         </div>
       </footer>
     </div>
-    </ToastProvider>
   );
 }

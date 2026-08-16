@@ -22,7 +22,7 @@ export interface TradeSetup {
   // Filter results (Step 1)
   passesFilter: boolean;
   allDigits: DigitStats[];    // Full 0-9 digit distribution
-  quietDigits: DigitStats[];  // Only the digits at/under the quiet threshold (≤9.9%)
+  quietDigits: DigitStats[];  // Only the digits at/under the quiet threshold (≤9.7%)
 
   // Entry digit (Step 2)
   entryDigit: number | null;

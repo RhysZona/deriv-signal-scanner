@@ -19,17 +19,14 @@ A real-time trading signal scanner for Deriv's **Volatility Indices** and **Jump
    - [strategy/analyzer.ts](#strategyanalyzerts)
    - [scanner/scanner.ts](#scannerscannerts)
    - [deriv/connection.ts](#derivconnectionts)
-   - [strategy/tradingConfig.ts](#strategytradingconfigts)
-   - [trader/trader.ts](#tradertraderts)
    - [deriv/symbols.ts](#derivsymbolsts)
    - [deriv/marketDiscovery.ts](#derivmarketdiscoveryts)
    - [index.ts (Express API + SSE)](#indexts-express-api--sse)
    - [debug/diagnose.ts](#debugdiagnosets)
 4. [Client Modules](#client-modules)
-5. [Auto-Trading & Safety Model](#auto-trading--safety-model)
-6. [Configuration Reference](#configuration-reference)
-7. [Running the Project](#running-the-project)
-8. [Conventions for AI Agents](#conventions-for-ai-agents)
+5. [Configuration Reference](#configuration-reference)
+6. [Running the Project](#running-the-project)
+7. [Conventions for AI Agents](#conventions-for-ai-agents)
 
 ---
 
@@ -37,13 +34,13 @@ A real-time trading signal scanner for Deriv's **Volatility Indices** and **Jump
 
 ### Core Concept
 
-You trade **digit frequency** on Deriv's synthetic indices. The strategy identifies digits that have been appearing *less often* than expected ("quiet" — occurring ≤9.9% over the last 1,000 ticks), then waits for a **momentum confirmation** before generating a signal. The bet is that quiet digits will keep under-appearing relative to the active (frequent) ones over the short-term contract duration.
+You trade **digit frequency** on Deriv's synthetic indices. The strategy identifies digits that have been appearing *less often* than expected ("quiet" — occurring ≤9.7% over the last 1,000 ticks), then waits for a **momentum confirmation** before generating a signal. The bet is that quiet digits will keep under-appearing relative to the active (frequent) ones over the short-term contract duration.
 
 Each Digit Options contract settles on the **last digit** of the price quote at the contract's expiry. The precision (number of decimals) varies per market — the scanner derives this automatically from the `pip` value returned by Deriv's `active_symbols` API.
 
 ### Trade Types & Payout Tiers
 
-| Tier | Trade Type | Quiet Digits (≤9.9%) | Bet | Typical Payout |
+| Tier | Trade Type | Quiet Digits (≤9.7%) | Bet | Typical Payout |
 |:---|:---|---:|:---|:---:|
 | 🥇 **High** | **Over 3** | 0, 1, 2, 3 | Next digit > 3 | ~$18.20 / $10 |
 | 🥇 **High** | **Under 6** | 6, 7, 8, 9 | Next digit < 6 | ~$18.20 / $10 |
@@ -67,9 +64,9 @@ Digits `0` and `9` are part of this strategy in specific ways:
 
 #### Step 1: Filter (1,000-tick scan)
 
-For each market, fetch the last 1,000 ticks and calculate the frequency of each digit (0–9). For a given trade type, every "losing" digit must be at or below the **quiet threshold** (default: 9.9%):
+For each market, fetch the last 1,000 ticks and calculate the frequency of each digit (0–9). For a given trade type, every "losing" digit must be at or below the **quiet threshold** (default: 9.7%):
 
-| Trade Type | Digits that must be ≤ 9.9% |
+| Trade Type | Digits that must be ≤ 9.7% |
 |:---|---:|
 | Over 3 | 0, 1, 2, 3 |
 | Under 6 | 6, 7, 8, 9 |
@@ -172,9 +169,9 @@ The scanner ranks passing signals for the dashboard:
 | 9 | 142 | 14.2% |
 
 **Result:**
-- **Filter** — All four digits (0, 1, 2, 3) ≤ 9.9% → ✅ PASS
+- **Filter** — All four digits (0, 1, 2, 3) ≤ 9.7% → ✅ PASS
 - **Entry digit** — Quiet digits sorted by %: 0(6.0%), 1(7.2%), 2(8.8%), 3(9.5%). 0 is exempt → **entry = 1**
-- **Quiet score** — avg(9.9 - 6.0, 9.9 - 7.2, 9.9 - 8.8, 9.9 - 9.5) / 4 = **2.025°**
+- **Quiet score** — avg(9.7 - 6.0, 9.7 - 7.2, 9.7 - 8.8, 9.7 - 9.5) / 4 = **1.825°**
 - **Valid confirmation digits** — {4, 5, 6, 7, 8}
 - **Live ticks:** `1 → 7` → ✅ CONFIRMED! Execute immediately when digit 7 lands
 - **Live ticks:** `1 → 9 → 5` → 9 is exempt (skipped), 5 confirms → ✅ Execute at 5
@@ -184,15 +181,15 @@ The scanner ranks passing signals for the dashboard:
 
 | Digit | % |
 |:---|---:|
-| 7 | **9.2%** ✅ quiet |
-| 8 | **9.8%** ✅ quiet |
-| 9 | **9.9%** ✅ quiet |
-| (other digits) | > 9.9% |
+| 7 | **9.0%** ✅ quiet |
+| 8 | **9.3%** ✅ quiet |
+| 9 | **9.5%** ✅ quiet |
+| (other digits) | > 9.7% |
 
 **Result:**
-- **Filter** — 7(9.2%), 8(9.8%), 9(9.9%) all ≤ 9.9% → ✅ PASS (Under 7)
-- **Entry digit** — Quiet digits sorted: 7(9.2%), 8(9.8%), 9(9.9%). 9 is exempt → **entry = 7** (least of remaining)
-- **Quiet score** — avg(9.9 - 9.2, 9.9 - 9.8, 9.9 - 9.9) / 3 = **0.27°** (weak — barely quiet)
+- **Filter** — 7(9.0%), 8(9.3%), 9(9.5%) all ≤ 9.7% → ✅ PASS (Under 7)
+- **Entry digit** — Quiet digits sorted: 7(9.0%), 8(9.3%), 9(9.5%). 9 is exempt → **entry = 7** (least of remaining)
+- **Quiet score** — avg(9.7 - 9.0, 9.7 - 9.3, 9.7 - 9.5) / 3 = **0.43°** (weak — barely quiet)
 - **Valid confirmation digits** — {1, 2, 3, 4, 5, 6}
 - **Live ticks:** `7 → 3` → ✅ CONFIRMED!
 - This would rank **below** Scenario A due to medium payout tier + lower quiet score
@@ -207,7 +204,7 @@ The scanner ranks passing signals for the dashboard:
 | 3 | **11.5%** ❌ |
 
 **Result:**
-- **Over 3 filter** — Digit 2 is 10.2% > 9.9% → ❌ FAIL
+- **Over 3 filter** — Digit 2 is 10.2% > 9.7% → ❌ FAIL
 - **Under 6 filter** — Not checked here, but 6, 7, 8, 9 might pass separately
 - No Over 3 signal generated. Scanner stays in `pending` state.
 
@@ -266,7 +263,7 @@ Tick: 6    → 6 > 3 → ✅ CONFIRMED!
 #### Scenario E: Very Strong vs. Marginal Signals
 
 **Market A** (Over 3): digits at 5.0%, 5.5%, 6.0%, 6.5% — quiet score = **4.0°** (strong)
-**Market B** (Over 3): digits at 9.0%, 9.5%, 9.6%, 9.7% — quiet score = **0.5°** (weak)
+**Market B** (Over 3): digits at 9.0%, 9.5%, 9.6%, 9.7% — quiet score = **0.3°** (weak)
 
 → Market A ranked first. Both are high tier, but Market A is far quieter.
 
@@ -290,12 +287,9 @@ deriv-signal-scanner/
 │   │   ├── strategy/
 │   │   │   ├── types.ts             # Shared types (TradeSetup, ScanResult, DigitStats, etc.)
 │   │   │   ├── config.ts            # Tunable strategy parameters (thresholds, intervals, etc.)
-│   │   │   ├── tradingConfig.ts     # Auto-trading parameters (stake, martingale, SL/TP, durations)
 │   │   │   └── analyzer.ts          # ★ Core strategy engine (filter, entry, confirmation, ranking)
 │   │   ├── scanner/
 │   │   │   └── scanner.ts           # Scan orchestrator + live monitoring FSM
-│   │   ├── trader/
-│   │   │   └── trader.ts            # ★ Auto-trade executor (arm/disarm, martingale, SL/TP gating)
 │   │   ├── debug/
 │   │   │   └── diagnose.ts          # Diagnostic tool to verify API connectivity and precision
 │   │   └── index.ts                 # Express server: REST API + SSE streaming
@@ -311,7 +305,8 @@ deriv-signal-scanner/
 │   │   │   ├── LiveMonitor.tsx      # Real-time tick watcher for active signals
 │   │   │   └── ScannerStatus.tsx    # Connection + feed health panel
 │   │   ├── hooks/
-│   │   │   └── useSignals.ts        # SSE consumer hook (auto-reconnect)
+│   │   │   ├── useSignals.ts        # SSE consumer hook (auto-reconnect)
+│   │   │   └── useStrategyConfig.ts # Polls /api/config for live strategy settings
 │   │   ├── types/index.ts           # Client-side type definitions (mirrors server types)
 │   │   ├── App.tsx                  # Root component
 │   │   └── main.tsx                 # Entry point
@@ -328,13 +323,14 @@ deriv-signal-scanner/
 Central configuration for every tunable parameter. All values have environment variable overrides.
 
 **Key fields:**
-- `quietThreshold` (default `9.9`) — percentage at or below which a digit is "quiet"
+- `quietThreshold` (default `9.7`) — percentage at or below which a digit is "quiet"
 - `excludeDigits` (default `[0, 9]`) — digits never used as entry or confirmation
 - `lookbackTicks` (default `1000`) — number of historical ticks per analysis
 - `confirmWithinTicks` (default `2`) — confirmation window size after entry digit hits
 - `scanIntervalMs` (default `30_000`) — full scan interval (ms)
 - `confirmedCooldownMs` (default `10_000`) — auto-reset "confirmed" status after this long (ms)
 - `marketRefreshMs` (default `3_600_000`) — how often to refresh the market list from Deriv (ms)
+- `configPollMs` (default `15_000`) — how often the client re-polls `/api/config` (ms); served to the UI so the config sync cadence is tunable at runtime
 
 **Env vars:** All fields are overridable via `STRAT_QUIET_THRESHOLD`, `STRAT_EXCLUDE_DIGITS` (comma-separated), `STRAT_LOOKBACK_TICKS`, etc.
 
@@ -457,69 +453,13 @@ WebSocket connection manager for Deriv's API (`wss://ws.derivws.com/websockets/v
 - **Request/response matching** via `req_id` — each `send()` returns a Promise that resolves when the matching response arrives
 - **Subscription management** — `subscribe(symbol, handler)` returns an unsubscribe function. Uses Deriv's `subscription.id` for correct `forget` calls
 - **Feed health monitoring** — flags as "degraded" if no tick arrives on any subscription within 20s
-- **Auth support** — reads `DERIV_API_TOKEN` from env (required for auto-trading; captures the account's `isVirtual` flag used by the demo-first safety gate)
 - **Re-subscribe on reconnect** — automatically re-sends `ticks` subscribe for all active subscriptions when the WebSocket reconnects
 
 **Key methods:**
-- `connect()` — open WebSocket, optional authorize
+- `connect()` — open WebSocket
 - `send(request)` — send JSON, await response by req_id (15s timeout)
 - `subscribe(symbol, handler)` — subscribe to live ticks, returns unsubscribe fn
 - `disconnect()` — clean teardown with `forget_all`
-- `authorize()` / `isAuthorized()` / `getAccount()` — authenticate with `DERIV_API_TOKEN` and expose the resolved account (`loginid`, `isVirtual`, `currency`, `balance`). **The `isVirtual` flag is what the trader uses to distinguish a demo account from a real one.**
-- `buyContract({ symbol, contractType, barrier, durationTicks, stake, currency })` — place a digit-options order, returns `{ contractId, buyPrice, payout }`
-- `waitForSettlement(contractId, timeoutMs)` — resolve `{ profit, won }` once the contract closes (via `proposal_open_contract` subscription)
-
-### `strategy/tradingConfig.ts`
-
-Configuration for the **auto-trading executor**, kept separate from the signal-strategy config so trading can be tuned (or disabled) without touching the scanner.
-
-**Key fields:**
-
-| Field | Default | Description |
-|:---|---|---|
-| `enabled` | `true` | Master switch for the trading subsystem. If `false`, signals are never executed. |
-| `allowReal` | `false` | **Safety gate.** When `false`, orders are blocked on any non-virtual (real-money) account. Must be explicitly enabled to trade real funds. |
-| `baseStake` | `1` | Starting stake per trade (in `currency`). |
-| `currency` | `'USD'` | Trade currency. |
-| `martingaleMultiplier` | `1.3` | Stake multiplier applied after a loss. |
-| `maxMartingaleSteps` | `10` | After this many consecutive losses, the ladder resets to `baseStake` (prevents runaway stakes). |
-| `stopLoss` | `2000` | Session loss limit. When `sessionPnL <= -stopLoss`, the trader **auto-disarms**. |
-| `takeProfit` | `baseStake` | Session profit target (defaults to 1× the base stake — "TP same as stake"). When `sessionPnL >= takeProfit`, the trader **auto-disarms**. Override via `TRADE_TAKE_PROFIT`. |
-| `durationTicks` | `{ Volatility: 1, Jump: 2 }` | Contract duration by family (see `durationTicksFor`). |
-| `maxConcurrent` | `1` | Maximum simultaneous open contracts (currently one-at-a-time globally). |
-
-**Helper functions:**
-- `durationTicksFor(symbol, family)` — returns the correct tick duration: **plain Volatility (`R_*`) → 1 tick; Volatility 1s (`1HZ…V`) and Jump → 2 ticks.** This matches the operator's live bot configuration.
-- `toContract(tradeType)` — maps a strategy `TradeType` to a Deriv contract + barrier: `OVER_3 → {DIGITOVER, '3'}`, `OVER_2 → {DIGITOVER, '2'}`, `UNDER_6 → {DIGITUNDER, '6'}`, `UNDER_7 → {DIGITUNDER, '7'}`.
-
-**Env vars:** `TRADE_ENABLED`, `TRADE_ALLOW_REAL`, `TRADE_BASE_STAKE`, `TRADE_MARTINGALE`, `TRADE_STOP_LOSS`, `TRADE_TAKE_PROFIT`, `TRADE_DURATION_VOL`, `TRADE_DURATION_JUMP`, `TRADE_MAX_CONCURRENT`.
-
-### `trader/trader.ts`
-
-**The auto-trade executor.** Safety-critical: it turns confirmed signals into real orders, so it is defensive by default. Exposes a singleton `trader`.
-
-**Execution flow (`onConfirmedSignal`):** The scanner calls this exactly once, on the **rising edge** of a signal entering `confirmed` status (never repeatedly while it stays confirmed). The trader then:
-
-1. Resolves the family, contract type + barrier (`toContract`), tick duration (`durationTicksFor`), and current stake (martingale ladder).
-2. Checks `blockedReason()`. If blocked, it logs a **dry-run** line and emits the intended trade without sending anything to Deriv.
-3. Otherwise it takes the one-at-a-time open-contract lock, calls `buyContract`, then `waitForSettlement`, then `settle`.
-
-**`blockedReason()` returns a non-null reason (and the order is skipped) when any of these hold:**
-- trading is disabled (`enabled === false`)
-- the trader is **not armed** (armed is `false` by default every session)
-- the connection is **not authorized**
-- the account is **real money and `allowReal` is `false`** (the demo-first gate)
-- a contract is already open (one-at-a-time lock)
-- the session stop-loss has already been reached
-
-**Martingale & session accounting (`settle`):**
-- **Win** → P&L increases by payout; stake **resets to `baseStake`**; martingale step → 0.
-- **Loss** → P&L decreases by stake; martingale step increments and stake is multiplied by `1.3` (e.g. `1.00 → 1.30 → 1.69 → 2.20 → 2.86 → 3.72 …`). At `maxMartingaleSteps` the ladder resets to base.
-- **Auto-disarm** fires when `sessionPnL <= -stopLoss` **or** (`takeProfit != null` and `sessionPnL >= takeProfit`). Both the stop-loss **and** the take-profit hit disarm the trader.
-
-**State & controls:** `arm()`, `disarm(reason)`, `resetSession()`, `onTrade(cb)`, `getState()`, `getRecentTrades()`. `getState()` exposes `armed`, `currentStake`, `martingaleStep`, `sessionPnL`, `wins`, `losses`, `lastDisarmReason`, and whether a contract is currently open.
-
-> **Safety model:** demo-first (real money blocked unless `allowReal` is explicitly set), **manual arm required each session** (never auto-arms on boot), one trade at a time, and automatic disarm on both stop-loss and take-profit. Arming is a per-session action — a restart always comes up disarmed.
 
 ### `deriv/symbols.ts`
 
@@ -556,20 +496,14 @@ Express server on port 3001 (or `PORT` env var).
 | `GET` | `/api/health` | Health check (uptime, connection status, feed health) |
 | `GET` | `/api/config` | Current strategy configuration |
 | `PUT` | `/api/config` | Update strategy config at runtime |
-| `GET` | `/api/trading/config` | Current auto-trading configuration |
-| `PUT` | `/api/trading/config` | Update trading config (stake, martingale, SL/TP, durations, `allowReal`) |
-| `GET` | `/api/trading/status` | Trader state (armed, stake, martingale step, session P&L, wins/losses) + recent trades |
-| `POST` | `/api/trading/arm` | Arm the trader for this session (required before any order is placed) |
-| `POST` | `/api/trading/disarm` | Manually disarm the trader |
-| `POST` | `/api/trading/reset` | Reset the session (P&L, martingale ladder, counters) |
 
 **SSE Events:**
 - `event: scan_result` — full scan result with `{ scanResult, liveUpdates }`
 - `event: live_update` — live tick updates with `{ scanResult, liveUpdates }`
 - `event: status` — connection status `{ connected, feedDegraded }`
-- `event: trade_state` — trader state snapshot whenever it changes (arm/disarm, stake, P&L)
-- `event: trade` — a single completed/attempted trade record (including dry-run blocked attempts)
 - `: heartbeat` — keepalive every 15s
+
+**Client config consumption:** The frontend polls `GET /api/config` (via `useStrategyConfig.ts`) at the cadence reported by `configPollMs` (default 15s, clamped to 2s–10min) and renders the digit chart's quiet-threshold marker from the live `quietThreshold` — so `PUT /api/config` retunes are reflected in the UI without a reload. The client adopts a changed `configPollMs` on the next poll, so the cadence itself is tunable at runtime too.
 
 ### `debug/diagnose.ts`
 
@@ -599,65 +533,14 @@ const barColor = isEntry ? 'bg-emerald-500' : isQuiet ? 'bg-emerald-700/60' : 'b
 - `App.tsx` — Root, renders `Header` + `Dashboard`
 - `Dashboard.tsx` — Main layout: empty state when no signals, grid layout when signals exist. Left column: ranked signal cards. Right column: ScannerStatus, LiveMonitor, MarketOverview
 - `SignalCard.tsx` — Card with header (rank, trade type, payout badge, status badge), market info, entry/confirmation display, and DigitDistribution. Only renders when `signal.passesFilter` is true
-- `DigitDistribution.tsx` — Horizontal bar chart showing all 10 digits. Color-coded: emerald for entry/quiet, red for active (above threshold), blue for confirmation digits. Shows threshold line at 9.9%
+- `DigitDistribution.tsx` — Horizontal bar chart showing all 10 digits. Color-coded: emerald for entry/quiet, red for active (above threshold), blue for confirmation digits. The red threshold marker is positioned from the **live `quietThreshold`** served by `GET /api/config` (polled via `useStrategyConfig` at the server-provided `configPollMs`), so server-side retunes move the line without a page reload — falling back to the 9.7% default only while the config is loading or unreachable
 - `LiveMonitor.tsx` — Shows signals currently in `watching_entry` or `watching_confirmation` state with real-time status
 - `ScannerStatus.tsx` — Connection status and feed health indicator
 - `Header.tsx` — Sticky top bar with logo, scan time, and signal count
 
 **SSE Connection (`useSignals.ts`):** Uses native `EventSource` to consume the SSE stream. Connects on mount, auto-reconnects on error with 3s delay. Parses `scan_result` and `live_update` events.
 
----
-
-## Auto-Trading & Safety Model
-
-The scanner can place trades automatically when a signal reaches `confirmed` status. This is **off-by-default at the point of execution**: the code runs, but no order is sent until you explicitly arm the trader on an authorized account, and real money is blocked unless you deliberately allow it.
-
-### Layered safety gates
-
-An order is only sent when **all** of these are true (checked by `trader.blockedReason()`):
-
-1. `TRADE_ENABLED` is `true` (subsystem on).
-2. The trader is **armed** — `POST /api/trading/arm`. It starts **disarmed every session** and never auto-arms on boot.
-3. The connection is **authorized** (`DERIV_API_TOKEN` set and accepted).
-4. The account is **demo**, OR it is real **and** `TRADE_ALLOW_REAL=true`. A real account with `allowReal` unset is always blocked.
-5. No contract is currently open (one trade at a time).
-6. The session stop-loss has not been reached.
-
-If any gate fails, the trader logs a **dry-run** line and emits the intended trade over the `trade` SSE event without contacting Deriv — so you can watch exactly what it *would* do before arming.
-
-### Recommended first run (demo)
-
-```bash
-# 1. Use a DEMO (virtual) API token; leave real-money trading blocked
-export DERIV_API_TOKEN=<your-demo-token>
-export TRADE_ALLOW_REAL=false
-
-# 2. Start the server, confirm it authorizes onto a virtual account
-cd server && npm run dev
-#    → look for the account log line showing isVirtual: true
-
-# 3. Watch signals for a while WITHOUT arming (dry-run trades stream over SSE)
-
-# 4. When ready, arm for the session:
-curl -X POST http://localhost:3001/api/trading/arm
-
-# 5. Stop any time:
-curl -X POST http://localhost:3001/api/trading/disarm
-```
-
-### Auto-disarm
-
-The trader disarms itself (stops placing orders until you re-arm) when:
-- **Stop-loss:** `sessionPnL <= -TRADE_STOP_LOSS` (default 2000), **or**
-- **Take-profit:** `TRADE_TAKE_PROFIT` is set and `sessionPnL >= TRADE_TAKE_PROFIT`.
-
-`lastDisarmReason` in `GET /api/trading/status` tells you which fired. Use `POST /api/trading/reset` to clear session P&L and the martingale ladder before arming again.
-
-> **Duration & martingale mirror the operator's live bot:** plain Volatility = 1 tick, Jump and 1s Volatility = 2 ticks, martingale ×1.3. When the even/odd strategy is added later, some values differ (e.g. take-profit = 2× stake) — set those via the `TRADE_*` env vars or `PUT /api/trading/config` for that strategy.
-
-### ⚠️ Statistical reality check
-
-Deriv's synthetic indices are generated so that each digit is **independent and uniformly distributed** by design. A digit being "quiet" over the last 1,000 ticks does **not** make it more or less likely to appear next — there is no memory in the process. This strategy (and the martingale on top of it) can win over short runs and *will* eventually hit a losing streak long enough to reach the stop-loss. The safety gates exist to bound that loss, not to guarantee a profit. Trade demo first, and never set `TRADE_ALLOW_REAL=true` with money you can't afford to lose.
+**Strategy Config (`useStrategyConfig.ts`):** Polls `GET /api/config` at the cadence the server reports via `configPollMs` (default 15s, overridable with `STRAT_CONFIG_POLL_MS` or `PUT /api/config`) and shares the result through a module-level cache, so all signal cards trigger a single request per tick regardless of how many are mounted. `DigitDistribution` reads `quietThreshold` from it to position the threshold marker. Each successful poll refreshes the "last sync" time; requests are aborted after a timeout (derived from the cadence) so a hung fetch can't stall polling.
 
 ---
 
@@ -667,25 +550,16 @@ All configurable via environment variables (server-side):
 
 | Env Var | Default | Description |
 |:---|---|---|
-| `STRAT_QUIET_THRESHOLD` | `9.9` | Quiet digit threshold (%) |
+| `STRAT_QUIET_THRESHOLD` | `9.7` | Quiet digit threshold (%) |
 | `STRAT_EXCLUDE_DIGITS` | `0,9` | Digits excluded from entry/confirmation |
 | `STRAT_LOOKBACK_TICKS` | `1000` | Historical ticks per analysis |
 | `STRAT_CONFIRM_WITHIN_TICKS` | `2` | Confirmation window size |
 | `STRAT_SCAN_INTERVAL_MS` | `30000` | Full scan interval (ms) |
 | `STRAT_CONFIRMED_COOLDOWN_MS` | `10000` | Auto-reset confirmed status after (ms) |
 | `STRAT_MARKET_REFRESH_MS` | `3600000` | Market list refresh interval (ms) |
+| `STRAT_CONFIG_POLL_MS` | `15000` | Client `/api/config` poll interval (ms) |
 | `PORT` | `3001` | Server port |
 | `DERIV_APP_ID` | `1089` | Your Deriv application ID (register at app.deriv.com) |
-| `DERIV_API_TOKEN` | _(none)_ | API token for authenticated calls (required for auto-trading) |
-| `TRADE_ENABLED` | `true` | Master switch for the auto-trading subsystem |
-| `TRADE_ALLOW_REAL` | `false` | Allow orders on a real-money account (safety gate — leave `false` for demo) |
-| `TRADE_BASE_STAKE` | `1` | Starting stake per trade |
-| `TRADE_MARTINGALE` | `1.3` | Stake multiplier after a loss |
-| `TRADE_STOP_LOSS` | `2000` | Session loss limit before auto-disarm |
-| `TRADE_TAKE_PROFIT` | `= base stake` | Session profit target before auto-disarm (defaults to 1× base stake) |
-| `TRADE_DURATION_VOL` | `1` | Tick duration for plain Volatility indices |
-| `TRADE_DURATION_JUMP` | `2` | Tick duration for Jump indices (1s Volatility also uses 2) |
-| `TRADE_MAX_CONCURRENT` | `1` | Maximum simultaneous open contracts |
 
 ---
 
@@ -798,14 +672,6 @@ The scanner preserves live confirmation state across consecutive scans. When a n
 - Jump index symbols are `JD10`, `JD25`, `JD50`, `JD75`, `JD100` — NOT `1HZ10J` etc.
 - Decimal precision per market is derived from the `pip` field in Deriv's API, not assumed.
 
-### Auto-Trading
-
-- **All trading execution lives in `server/src/trader/trader.ts`; all trading parameters in `server/src/strategy/tradingConfig.ts`.** Keep the two separate from the scanner/strategy modules.
-- **Never weaken `blockedReason()`.** It is the single choke point that enforces every safety gate (armed, authorized, demo-vs-real, one-at-a-time, stop-loss). New gates go here.
-- **The trader must fire once per confirmation.** The scanner calls `onConfirmedSignal` only on the rising edge into `confirmed` — do not call it while a signal *stays* confirmed.
-- **The trader always boots disarmed.** Do not add any code path that auto-arms on startup.
-- **`allowReal` defaults to `false` and must stay that way.** Real-money trading requires explicit operator opt-in via `TRADE_ALLOW_REAL` / `PUT /api/trading/config`.
-
 ### Precision Handling
 
 Different synthetic indices quote at different decimal precision:
@@ -822,6 +688,7 @@ The scanner self-corrects precision at runtime by checking the maximum decimal p
 - Dynamic classes use conditional static strings, not template interpolation (see Tailwind note above).
 - SSE event names use snake_case (`scan_result`, `live_update`) to match Deriv conventions.
 - The `EventSource` URL is relative (`/api/signals/stream`) — the Vite dev server proxies `/api` to the Express backend.
+- `useStrategyConfig` is the single `/api/config` fetcher on the client (polled at the server-provided `configPollMs`, shared module-level cache). Don't add a second fetcher — reuse the hook.
 
 ### Important Gotchas
 

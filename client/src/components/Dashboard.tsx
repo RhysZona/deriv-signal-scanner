@@ -1,4 +1,4 @@
-import type { ScanResult, TradeSetup, TraderState, TradeRecord } from '../types';
+import type { ScanResult, TradeSetup } from '../types';
 import { EmptyState } from './EmptyState';
 import { SignalList } from './SignalList';
 import { SidePanel } from './SidePanel';
@@ -10,8 +10,6 @@ interface DashboardProps {
   liveUpdates: TradeSetup[] | null;
   lastScanTime: number | null;
   marketsCount: number | null;
-  traderState: TraderState | null;
-  tradeHistory: TradeRecord[];
 }
 
 export function Dashboard({
@@ -21,8 +19,6 @@ export function Dashboard({
   liveUpdates,
   lastScanTime,
   marketsCount,
-  traderState,
-  tradeHistory,
 }: DashboardProps) {
   const signals = scanResult?.rankedSignals ?? [];
   const hasSignals = signals.length > 0;
@@ -45,8 +41,6 @@ export function Dashboard({
             lastScanTime={lastScanTime}
             marketsCount={marketsCount}
             liveUpdates={liveUpdates}
-            traderState={traderState}
-            tradeHistory={tradeHistory}
             signals={signals}
           />
         </div>

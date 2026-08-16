@@ -27,6 +27,11 @@ export interface StrategyConfig {
   confirmedCooldownMs: number;
   /** How often to refresh the dynamic market list from Deriv (ms). */
   marketRefreshMs: number;
+  /**
+   * How often the client should re-poll /api/config (ms). Served to the UI so
+   * the config sync cadence is tunable at runtime without a client redeploy.
+   */
+  configPollMs: number;
 }
 
 function num(envKey: string, fallback: number): number {
@@ -49,13 +54,14 @@ function digitList(envKey: string, fallback: number[]): number[] {
 let config: StrategyConfig = {
   // STRAT_QUIET_THRESHOLD is the current name; STRAT_COLD_THRESHOLD stays as a
   // backward-compatible alias for the old "cold" wording.
-  quietThreshold: num('STRAT_QUIET_THRESHOLD', num('STRAT_COLD_THRESHOLD', 9.9)),
+  quietThreshold: num('STRAT_QUIET_THRESHOLD', num('STRAT_COLD_THRESHOLD', 9.7)),
   excludeDigits: digitList('STRAT_EXCLUDE_DIGITS', [0, 9]),
   lookbackTicks: num('STRAT_LOOKBACK_TICKS', 1000),
   confirmWithinTicks: num('STRAT_CONFIRM_WITHIN_TICKS', 2),
   scanIntervalMs: num('STRAT_SCAN_INTERVAL_MS', 30_000),
   confirmedCooldownMs: num('STRAT_CONFIRMED_COOLDOWN_MS', 10_000),
   marketRefreshMs: num('STRAT_MARKET_REFRESH_MS', 3_600_000),
+  configPollMs: num('STRAT_CONFIG_POLL_MS', 15_000),
 };
 
 export function getConfig(): StrategyConfig {

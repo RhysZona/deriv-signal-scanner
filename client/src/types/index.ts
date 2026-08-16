@@ -47,37 +47,15 @@ export interface MarketSymbol {
   decimals: number;
 }
 
-// ── Trading ──────────────────────────────────────────────────────────────────
-
-export interface TraderState {
-  enabled: boolean;
-  armed: boolean;
-  authorized: boolean;
-  account: { loginid: string; isVirtual: boolean; currency: string } | null;
-  allowReal: boolean;
-  openContract: boolean;
-  currentStake: number;
-  martingaleStep: number;
-  sessionPnL: number;
-  wins: number;
-  losses: number;
-  lastDisarmReason: string | null;
+export interface StrategyConfig {
+  quietThreshold: number;
+  excludeDigits: number[];
+  lookbackTicks: number;
+  confirmWithinTicks: number;
+  scanIntervalMs: number;
+  confirmedCooldownMs: number;
+  marketRefreshMs: number;
+  /** How often the client should re-poll /api/config (ms). */
+  configPollMs: number;
 }
 
-export interface TradeRecord {
-  id: string;
-  time: number;
-  symbol: string;
-  displayName: string;
-  tradeType: string;
-  contractType: string;
-  barrier: string;
-  durationTicks: number;
-  stake: number;
-  martingaleStep: number;
-  dryRun: boolean;
-  contractId?: number;
-  status: 'placed' | 'won' | 'lost' | 'error' | 'dry_run';
-  profit?: number;
-  error?: string;
-}

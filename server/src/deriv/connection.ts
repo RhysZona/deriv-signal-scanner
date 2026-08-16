@@ -34,23 +34,6 @@ class DerivConnection {
   private feedDegraded = false;
   private statusHandlers = new Set<StatusHandler>();
 
-  // Optional auth token — enables authenticated calls (trading) in future.
-  private authToken: string | null = process.env.DERIV_API_TOKEN ?? null;
-
-  // Populated after a successful authorize; null when not authenticated.
-  private account: { loginid: string; isVirtual: boolean; currency: string; balance: number } | null = null;
-
-  // contract_id → handler awaiting that contract's proposal_open_contract updates
-  private contractHandlers: Map<number, (parsed: any) => void> = new Map();
-
-  isAuthorized(): boolean {
-    return this.account !== null;
-  }
-
-  getAccount() {
-    return this.account;
-  }
-
   async connect(): Promise<void> {
     if (this.isConnected) return;
     if (this.connectPromise) return this.connectPromise;
@@ -66,15 +49,6 @@ class DerivConnection {
         this.isConnected = true;
         this.connectPromise = null;
         this.emitStatus();
-
-        // Authorize first if a token is configured (no-op for read-only use).
-        if (this.authToken) {
-          try {
-            await this.authorize();
-          } catch (e: any) {
-            console.error('[DerivWS] Authorize failed:', e?.message ?? e);
-          }
-        }
 
         // Re-subscribe everything after a (re)connect so live monitoring
         // resumes instead of going permanently silent.
@@ -112,13 +86,6 @@ class DerivConnection {
               const handlers = this.subscriptions.get(symbol);
               if (handlers) handlers.forEach((h) => h(parsed.tick));
             }
-          }
-
-          // Dispatch contract settlement updates to any waiter.
-          if (parsed.msg_type === 'proposal_open_contract' && parsed.proposal_open_contract) {
-            const cid = parsed.proposal_open_contract.contract_id;
-            const h = this.contractHandlers.get(cid);
-            if (h) h(parsed);
           }
         } catch (e) {
           console.error('[DerivWS] Failed to parse message:', e);
@@ -291,102 +258,6 @@ class DerivConnection {
   private emitStatus() {
     const status = this.getStatus();
     this.statusHandlers.forEach((h) => h(status));
-  }
-
-  // ── Trading / auth ───────────────────────────────────────────────────────────
-
-  /** Authorize with the configured token and record account type/balance. */
-  async authorize(): Promise<void> {
-    if (!this.authToken) throw new Error('No DERIV_API_TOKEN configured');
-    const res = await this.send({ authorize: this.authToken });
-    const a = res?.authorize;
-    if (!a) throw new Error('Authorize returned no account');
-    this.account = {
-      loginid: a.loginid,
-      isVirtual: a.is_virtual === 1,
-      currency: a.currency,
-      balance: a.balance,
-    };
-    console.log(
-      `[DerivWS] Authorized ${a.loginid} (${this.account.isVirtual ? 'DEMO' : 'REAL'}) ` +
-      `balance ${a.balance} ${a.currency}`,
-    );
-  }
-
-  /**
-   * Buy a digit contract. `proposalRequest` is a Deriv `parameters` object.
-   * Uses buy with `price` as the max stake. Returns the buy response
-   * (contains contract_id) or throws on error.
-   */
-  async buyContract(params: {
-    symbol: string;
-    contractType: string;
-    barrier: string;
-    durationTicks: number;
-    stake: number;
-    currency: string;
-  }): Promise<{ contractId: number; buyPrice: number; payout: number }> {
-    if (!this.isAuthorized()) throw new Error('Not authorized — cannot buy');
-
-    const res = await this.send({
-      buy: 1,
-      price: params.stake, // max price willing to pay = stake
-      parameters: {
-        amount: params.stake,
-        basis: 'stake',
-        contract_type: params.contractType,
-        currency: params.currency,
-        duration: params.durationTicks,
-        duration_unit: 't',
-        symbol: params.symbol,
-        barrier: params.barrier,
-      },
-    });
-
-    if (res?.error) throw new Error(res.error.message || res.error.code);
-    const buy = res?.buy;
-    if (!buy?.contract_id) throw new Error('Buy returned no contract_id');
-    return { contractId: buy.contract_id, buyPrice: buy.buy_price, payout: buy.payout };
-  }
-
-  /**
-   * Wait for a contract to settle and report profit. Subscribes to
-   * proposal_open_contract and resolves once `is_sold` is true.
-   */
-  async waitForSettlement(contractId: number, timeoutMs = 120_000): Promise<{ profit: number; won: boolean }> {
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          this.contractHandlers.delete(contractId);
-          reject(new Error(`Contract ${contractId} settlement timed out`));
-        }
-      }, timeoutMs);
-
-      // Dedicated handler keyed off contract id via the generic message stream.
-      const handler = (parsed: any) => {
-        const poc = parsed?.proposal_open_contract;
-        if (!poc || poc.contract_id !== contractId) return;
-        if (poc.is_sold) {
-          settled = true;
-          clearTimeout(timer);
-          this.contractHandlers.delete(contractId);
-          const profit = Number(poc.profit);
-          resolve({ profit, won: profit >= 0 });
-        }
-      };
-      this.contractHandlers.set(contractId, handler);
-
-      this.send({ proposal_open_contract: 1, contract_id: contractId, subscribe: 1 }).catch((e) => {
-        if (!settled) {
-          settled = true;
-          clearTimeout(timer);
-          this.contractHandlers.delete(contractId);
-          reject(e);
-        }
-      });
-    });
   }
 
   async disconnect() {

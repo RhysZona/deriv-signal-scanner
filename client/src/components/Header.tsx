@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { TradeType } from '../types';
+import { LiveConfigIndicator } from './LiveConfigIndicator';
+import { formatTimeAgo } from '../lib/time';
 
 interface HeaderProps {
   connected: boolean;
@@ -73,6 +75,8 @@ export function Header({ connected, feedDegraded, isReconnecting, lastScanTime, 
               </div>
             )}
 
+            <LiveConfigIndicator />
+
             {isReconnecting && (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-900/20 border border-amber-700/30 animate-pulse">
                 <svg className="w-3 h-3 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -108,12 +112,4 @@ export function Header({ connected, feedDegraded, isReconnecting, lastScanTime, 
   );
 }
 
-function formatTimeAgo(timestamp: number, now: number): string {
-  const seconds = Math.floor((now - timestamp) / 1000);
-  if (seconds < 5) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ago`;
-}
+

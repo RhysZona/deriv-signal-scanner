@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ScanResult, TradeSetup, TraderState, TradeRecord } from '../types';
+import type { ScanResult, TradeSetup } from '../types';
 
 interface SignalsState {
   connected: boolean;
@@ -9,8 +9,6 @@ interface SignalsState {
   lastScanTime: number | null;
   totalSignals: number;
   error: string | null;
-  traderState: TraderState | null;
-  tradeHistory: TradeRecord[];
   /** True while the error handler's reconnect timer is counting down. */
   isReconnecting: boolean;
 }
@@ -24,8 +22,6 @@ export function useSignals() {
     lastScanTime: null,
     totalSignals: 0,
     error: null,
-    traderState: null,
-    tradeHistory: [],
     isReconnecting: false,
   });
 
@@ -93,34 +89,6 @@ export function useSignals() {
         }
       } catch (e) {
         console.error('[SSE] Status parse error:', e);
-      }
-    });
-
-    // ── Trade state (initial snapshot + live updates) ──────────────────────
-    es.addEventListener('trade_state', (event) => {
-      if (!mountedRef.current) return;
-      try {
-        const data = JSON.parse(event.data);
-        setState(prev => ({ ...prev, traderState: data }));
-      } catch (e) {
-        console.error('[SSE] Trade state parse error:', e);
-      }
-    });
-
-    // ── Individual trade events (placed / won / lost / dry_run) ────────────
-    es.addEventListener('trade', (event) => {
-      if (!mountedRef.current) return;
-      try {
-        const data = JSON.parse(event.data);
-        if (data.record) {
-          setState(prev => ({
-            ...prev,
-            traderState: data.state ?? prev.traderState,
-            tradeHistory: [data.record, ...prev.tradeHistory].slice(0, 50),
-          }));
-        }
-      } catch (e) {
-        console.error('[SSE] Trade parse error:', e);
       }
     });
 
