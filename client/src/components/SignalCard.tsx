@@ -35,12 +35,11 @@ export function SignalCard({ signal, isLive, rank, scanTime }: SignalCardProps) 
   if (!signal.passesFilter) return null;
 
   return (
-    <div className={`${isTop ? 'top-border rounded-2xl' : 'rounded-2xl border border-[var(--chip-border)]'}`}>
+    <div className={`card-hover rounded-2xl ${isTop ? 'top-border' : 'border border-[var(--chip-border)]'}`}>
       <div
-        className={`spotlight-card relative overflow-hidden rounded-[19px] glass-hover ${
+        className={`relative overflow-hidden rounded-[19px] ${
           isTop ? 'bg-[var(--card-bg)]' : 'bg-[var(--card-bg-soft)] backdrop-blur-xl'
         } ${confirmed ? 'ring-1 ring-emerald-400/40 shadow-[0_0_34px_-10px_rgba(52,211,153,0.4)]' : ''}`}
-        style={{ '--spot-color': isTop ? 'rgba(52,211,153,0.12)' : 'rgba(52,211,153,0.07)' } as React.CSSProperties}
       >
         <div key={scanTime ?? 'initial'} className="refresh-flash h-full">
           {/* Card header */}
