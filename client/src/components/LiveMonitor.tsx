@@ -45,10 +45,10 @@ function LiveRow({ setup }: { setup: TradeSetup }) {
   const tradeColor = high ? 'text-emerald-300' : 'text-amber-300';
 
   return (
-    <div className="animate-fade-in-up flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] transition-colors hover:border-white/[0.12]">
+    <div className="animate-fade-in-up flex items-center justify-between px-3 py-2.5 rounded-xl bg-[var(--chip-bg)] border border-[var(--chip-border)] transition-colors hover:border-[var(--glass-border-hover)]">
       <div className="flex items-center gap-2.5 min-w-0">
-        <span className="truncate text-xs font-semibold text-white">{setup.marketDisplayName}</span>
-        <span className="text-[9px] font-mono text-dark-300 bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.06] shrink-0">
+        <span className="truncate text-xs font-semibold text-dark-100">{setup.marketDisplayName}</span>
+        <span className="text-[9px] font-mono text-dark-300 bg-[var(--chip-bg)] px-1.5 py-0.5 rounded border border-[var(--chip-border)] shrink-0">
           {setup.marketSymbol}
         </span>
         <span className={`text-[10px] font-bold uppercase shrink-0 ${tradeColor}`}>
@@ -76,7 +76,7 @@ function LiveRow({ setup }: { setup: TradeSetup }) {
                   className={`w-1.5 h-1.5 rounded-full ${
                     i < setup.ticksSinceEntry
                       ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]'
-                      : 'bg-white/[0.08]'
+                      : 'bg-[var(--dot-bg)]'
                   }`}
                 />
               ))}

@@ -43,7 +43,7 @@ export function MarketOverview({ signals }: MarketOverviewProps) {
       <h3 className="text-xs font-bold text-dark-200 uppercase tracking-[0.14em] mb-4">Market Overview</h3>
 
       {/* Proportion bar */}
-      <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.04] gap-px mb-3.5">
+      <div className="flex h-2 rounded-full overflow-hidden bg-[var(--track-bg)] gap-px mb-3.5">
         {byFamily.map(({ family, count }) =>
           count > 0 ? (
             <div
@@ -75,11 +75,11 @@ export function MarketOverview({ signals }: MarketOverviewProps) {
 
       {/* Top markets by signal count */}
       {topMarkets.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 border-t border-white/[0.05] pt-3">
+        <div className="flex flex-wrap gap-1.5 border-t border-[var(--divider)] pt-3">
           {topMarkets.map(([symbol, { name, count }]) => (
             <span
               key={symbol}
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[9px] font-medium text-dark-300"
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[var(--chip-bg)] border border-[var(--chip-border)] text-[9px] font-medium text-dark-300"
               title={name}
             >
               <span className="font-mono font-bold text-dark-100">{symbol}</span>

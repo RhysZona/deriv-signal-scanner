@@ -18,13 +18,13 @@ export function EmptyState({ connected }: EmptyStateProps) {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.8)]" />
       </div>
 
-      <h2 className="text-xl font-extrabold text-white tracking-tight mb-2">Scanning the markets</h2>
+      <h2 className="text-xl font-extrabold text-dark-100 tracking-tight mb-2">Scanning the markets</h2>
       <p className="text-sm text-dark-300 max-w-md mx-auto mb-6 leading-relaxed">
         {connected
           ? 'No signals right now. The scanner re-analyzes every market every 30 seconds — quiet digits can appear at any tick.'
           : 'Connecting to the Deriv API to scan markets...'}
       </p>
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.07] text-xs text-dark-300">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--chip-bg)] border border-[var(--chip-border)] text-xs text-dark-300">
         <StatusOrb status={connected ? 'ok' : 'warn'} ping />
         <span>{connected ? 'Scanning markets' : 'Establishing connection'}</span>
       </div>

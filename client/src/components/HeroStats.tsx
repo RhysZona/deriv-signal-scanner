@@ -149,7 +149,7 @@ function CountdownRing({ progress }: { progress: number }) {
   const offset = CIRCUMFERENCE * (1 - clamped);
   return (
     <svg width="44" height="44" viewBox="0 0 44 44" className="countdown-ring -rotate-90 shrink-0">
-      <circle cx="22" cy="22" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+      <circle cx="22" cy="22" r={RADIUS} fill="none" strokeWidth="3" style={{ stroke: 'var(--ring-track)' }} />
       <circle
         cx="22"
         cy="22"

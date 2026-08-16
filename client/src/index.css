@@ -2,18 +2,121 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ────────────────────────────────────────────────────────────────────────────
+   Theme tokens. `:root` is the dark (default) theme; `.light` on <html>
+   overrides the same variables for the light theme. Tailwind's dark-* palette
+   is mapped to the --c-* rgb triplets in tailwind.config.js, so text-dark-*
+   and friends flip automatically.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: dark;
+  /* Page + surfaces */
+  --bg: #06060b;
+  --header-bg: rgba(8, 8, 15, 0.72);
+  --card-bg: #0b0b13;
+  --card-bg-soft: rgba(11, 11, 19, 0.8);
+  /* Text palette (rgb triplets consumed by tailwind dark-*) */
+  --c-100: 209 209 221;
+  --c-200: 158 158 176;
+  --c-300: 107 107 128;
+  --c-400: 58 58 74;
+  --c-500: 42 42 56;
+  --c-600: 34 34 46;
+  --c-700: 26 26 36;
+  --c-800: 17 17 24;
+  --c-900: 10 10 15;
+  /* Glass surfaces */
+  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  --glass-bg-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-border-hover: rgba(255, 255, 255, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --glass-shadow: 0 12px 48px -16px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --glass-shadow-hover: 0 18px 56px -18px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  /* Chips / dividers / tracks */
+  --chip-bg: rgba(255, 255, 255, 0.04);
+  --chip-border: rgba(255, 255, 255, 0.06);
+  --divider: rgba(255, 255, 255, 0.05);
+  --track-bg: rgba(255, 255, 255, 0.04);
+  --track-border: rgba(255, 255, 255, 0.04);
+  --bar-idle: rgba(255, 255, 255, 0.06);
+  --ring-track: rgba(255, 255, 255, 0.06);
+  --dot-bg: rgba(255, 255, 255, 0.08);
+  --grid-line: rgba(255, 255, 255, 0.045);
+  /* Aurora palette */
+  --aurora-1: rgba(16, 185, 129, 0.075);
+  --aurora-2: rgba(6, 182, 212, 0.06);
+  --aurora-3: rgba(139, 92, 246, 0.055);
+  --selection-bg: rgba(16, 185, 129, 0.35);
+  --selection-color: #ecfdf5;
+  /* Accent scales (Tailwind defaults — dark theme) */
+  --em-300: 110 231 183; --em-400: 52 211 153; --em-500: 16 185 129;
+  --am-300: 252 211 77; --am-400: 251 191 36; --am-500: 245 158 11;
+  --sk-300: 125 211 252; --sk-400: 56 189 248; --sk-500: 14 165 233;
+  --vi-300: 196 181 253; --vi-400: 167 139 250; --vi-500: 139 92 246;
+  --rd-300: 252 165 165; --rd-400: 248 113 113; --rd-500: 239 68 68;
+  --cy-300: 103 232 249; --cy-400: 34 211 238; --cy-500: 6 182 212;
+  --te-300: 94 234 212; --te-400: 45 212 191; --te-500: 20 184 166;
+}
+
+.light {
+  color-scheme: light;
+  --bg: #eef0f7;
+  --header-bg: rgba(255, 255, 255, 0.72);
+  --card-bg: #ffffff;
+  --card-bg-soft: rgba(255, 255, 255, 0.85);
+  --c-100: 15 16 25;
+  --c-200: 43 45 62;
+  --c-300: 84 86 110;
+  --c-400: 122 124 148;
+  --c-500: 154 156 178;
+  --c-600: 176 178 198;
+  --c-700: 198 200 218;
+  --c-800: 220 222 238;
+  --c-900: 242 244 252;
+  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.45));
+  --glass-bg-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.62));
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-border-hover: rgba(255, 255, 255, 0.95);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 14px 44px -18px rgba(70, 85, 130, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-shadow-hover: 0 20px 56px -20px rgba(70, 85, 130, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --chip-bg: rgba(24, 29, 52, 0.045);
+  --chip-border: rgba(24, 29, 52, 0.09);
+  --divider: rgba(24, 29, 52, 0.08);
+  --track-bg: rgba(24, 29, 52, 0.06);
+  --track-border: rgba(24, 29, 52, 0.07);
+  --bar-idle: rgba(24, 29, 52, 0.08);
+  --ring-track: rgba(24, 29, 52, 0.12);
+  --dot-bg: rgba(24, 29, 52, 0.16);
+  --grid-line: rgba(24, 29, 52, 0.05);
+  --aurora-1: rgba(16, 185, 129, 0.3);
+  --aurora-2: rgba(6, 182, 212, 0.24);
+  --aurora-3: rgba(139, 92, 246, 0.22);
+  --selection-bg: rgba(16, 185, 129, 0.25);
+  --selection-color: #052e1f;
+  /* Accent scales — deeper shades for contrast on the light background */
+  --em-300: 5 150 105; --em-400: 16 185 129; --em-500: 5 150 105;
+  --am-300: 180 83 9; --am-400: 217 119 6; --am-500: 217 119 6;
+  --sk-300: 2 132 199; --sk-400: 14 165 233; --sk-500: 2 132 199;
+  --vi-300: 124 58 237; --vi-400: 139 92 246; --vi-500: 124 58 237;
+  --rd-300: 220 38 38; --rd-400: 239 68 68; --rd-500: 220 38 38;
+  --cy-300: 6 182 212; --cy-400: 8 145 178; --cy-500: 8 145 178;
+  --te-300: 13 148 136; --te-400: 20 184 166; --te-500: 20 184 166;
+}
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
-    color-scheme: dark;
   }
   body {
-    background-color: #06060b;
+    background-color: var(--bg);
     overflow-x: clip;
   }
   ::selection {
-    background: rgba(16, 185, 129, 0.35);
-    color: #ecfdf5;
+    background: var(--selection-bg);
+    color: var(--selection-color);
   }
 }
 
@@ -56,8 +159,8 @@
 /* Faint blueprint grid, fading out toward the bottom of the viewport. */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 54px 54px;
   -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 15%, transparent 75%);
   mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 15%, transparent 75%);
@@ -76,13 +179,11 @@
 .glass {
   position: relative;
   border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
-  box-shadow:
-    0 12px 48px -16px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: var(--glass-shadow);
 }
 /* Soft top-edge highlight. */
 .glass::before {
@@ -92,17 +193,15 @@
   right: 14%;
   top: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  background: linear-gradient(90deg, transparent, var(--glass-highlight), transparent);
 }
 .glass-hover {
   transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .glass-hover:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
-  box-shadow:
-    0 18px 56px -18px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
 }
 
 /* Mouse-following radial highlight (classic SaaS spotlight card). */
@@ -124,27 +223,20 @@
   opacity: 1;
 }
 
-/* Rotating conic border for the top-ranked signal. */
-@property --spin-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-@keyframes spin-border {
-  to { --spin-angle: 360deg; }
-}
-.animated-border {
+/* Static gradient border for the top-ranked signal — same prominence as the
+   former rotating ring but with no motion, so the card contents stay crisp. */
+.top-border {
   position: relative;
   border-radius: 1.25rem;
   padding: 1px;
   background: conic-gradient(
-    from var(--spin-angle),
-    rgba(16, 185, 129, 0.85),
-    rgba(6, 182, 212, 0.35),
-    rgba(16, 185, 129, 0.08),
-    rgba(16, 185, 129, 0.85)
+    from 210deg,
+    rgba(16, 185, 129, 0.9),
+    rgba(6, 182, 212, 0.4),
+    rgba(16, 185, 129, 0.12),
+    rgba(16, 185, 129, 0.9)
   );
-  animation: spin-border 7s linear infinite;
+  box-shadow: 0 0 30px -12px rgba(52, 211, 153, 0.5);
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -237,6 +329,19 @@
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
+   Theme cross-fade (View Transitions API)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+::view-transition-old(root) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-new(root) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
    Accessibility: honor reduced-motion preferences
    ──────────────────────────────────────────────────────────────────────────── */
 
@@ -250,6 +355,10 @@
     scroll-behavior: auto !important;
   }
   .aurora-blob {
+    animation: none;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
     animation: none;
   }
 }

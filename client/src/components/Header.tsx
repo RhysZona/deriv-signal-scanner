@@ -4,6 +4,7 @@ import { StatusOrb } from './StatusOrb';
 import { formatTimeAgo } from '../lib/time';
 import { useNow } from '../hooks/useNow';
 import { useCountUp } from '../hooks/useCountUp';
+import { useTheme } from '../hooks/useTheme';
 
 interface HeaderProps {
   connected: boolean;
@@ -24,9 +25,11 @@ export function Header({ connected, feedDegraded, isReconnecting, lastScanTime, 
   const now = useNow(1000);
   const signalCount = Math.round(useCountUp(totalSignals));
   const feedStatus: 'ok' | 'warn' | 'error' = !connected ? 'error' : feedDegraded ? 'warn' : 'ok';
+  const { theme, toggleTheme } = useTheme();
+  const light = theme === 'light';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#08080f]/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--divider)] bg-[var(--header-bg)] backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -39,11 +42,11 @@ export function Header({ connected, feedDegraded, isReconnecting, lastScanTime, 
                 </svg>
               </div>
               {connected && (
-                <StatusOrb status={feedStatus} ping={feedStatus === 'ok'} className="absolute -bottom-0.5 -right-0.5 !w-2.5 !h-2.5 ring-2 ring-[#08080f]" />
+                <StatusOrb status={feedStatus} ping={feedStatus === 'ok'} className="absolute -bottom-0.5 -right-0.5 !w-2.5 !h-2.5 ring-2 ring-[var(--header-bg)]" />
               )}
             </div>
             <div>
-              <h1 className="text-lg font-extrabold text-white tracking-tight leading-none">
+              <h1 className="text-lg font-extrabold text-dark-100 tracking-tight leading-none">
                 Signal<span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Scanner</span>
               </h1>
               <p className="text-[11px] text-dark-300 font-medium mt-0.5">Deriv Trading Signals</p>
@@ -87,6 +90,25 @@ export function Header({ connected, feedDegraded, isReconnecting, lastScanTime, 
             )}
 
             <LiveConfigIndicator />
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label={light ? 'Switch to dark theme' : 'Switch to light theme'}
+              title={light ? 'Switch to dark theme' : 'Switch to light theme'}
+              data-theme-toggle
+              className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--chip-bg)] border border-[var(--chip-border)] text-dark-300 hover:text-dark-100 hover:bg-[var(--dot-bg)] transition-colors"
+            >
+              {light ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                </svg>
+              )}
+            </button>
 
             {isReconnecting && (
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-400/[0.08] border border-amber-400/20 animate-pulse">

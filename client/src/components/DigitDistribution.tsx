@@ -40,7 +40,7 @@ export function DigitDistribution({
         const isConfirmation = validConfirmationDigits.includes(stat.digit);
         const barPercent = Math.min((stat.percentage / 20) * 100, 100); // scale: 20% = full bar
 
-        let barClass = 'bg-gradient-to-r from-white/[0.07] to-white/[0.03]';
+        let barClass = 'bg-[var(--bar-idle)]';
         let labelClass = 'text-dark-200';
         let glow = '';
 
@@ -85,7 +85,7 @@ export function DigitDistribution({
         <LegendDot cls="bg-emerald-500/60" label="Quiet" />
         <LegendDot cls="bg-red-500/60" label="Active" />
         <LegendDot cls="bg-sky-500/60" label="Confirm" />
-        <span className="border-l border-white/[0.07] pl-2.5 font-mono text-dark-400 tabular-nums">| {threshold.toFixed(1)}%</span>
+        <span className="border-l border-[var(--divider)] pl-2.5 font-mono text-dark-400 tabular-nums">| {threshold.toFixed(1)}%</span>
       </div>
     </div>
   );
@@ -119,7 +119,7 @@ function DigitRow({
       <span className={`w-4 text-xs font-mono font-bold text-right tabular-nums ${labelClass}`}>
         {stat.digit}
       </span>
-      <div className="flex-1 h-5 rounded-md bg-white/[0.04] overflow-hidden relative border border-white/[0.04]">
+      <div className="flex-1 h-5 rounded-md bg-[var(--track-bg)] overflow-hidden relative border border-[var(--track-border)]">
         <div
           className={`h-full rounded-md transition-all duration-700 ease-out ${barClass} ${glow}`}
           style={{ width: `${barPercent}%` }}

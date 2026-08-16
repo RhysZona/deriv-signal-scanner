@@ -18,11 +18,11 @@ const TRADE_LABELS: Record<TradeType, { label: string; dot: string; text: string
 };
 
 const STATUS_BADGES: Record<string, { label: string; orb: 'ok' | 'warn' | 'error' | 'idle'; cls: string; ping: boolean }> = {
-  pending: { label: 'Pending', orb: 'idle', cls: 'text-dark-200 bg-white/[0.04] border-white/[0.06]', ping: false },
+  pending: { label: 'Pending', orb: 'idle', cls: 'text-dark-200 bg-[var(--chip-bg)] border-[var(--chip-border)]', ping: false },
   watching_entry: { label: 'Watching Entry', orb: 'ok', cls: 'text-sky-300 bg-sky-400/10 border-sky-400/20', ping: true },
   watching_confirmation: { label: 'Watching Confirm', orb: 'warn', cls: 'text-amber-300 bg-amber-400/10 border-amber-400/20', ping: true },
   confirmed: { label: 'Confirmed', orb: 'ok', cls: 'text-emerald-300 bg-emerald-400/15 border-emerald-400/40', ping: true },
-  reset: { label: 'Reset', orb: 'idle', cls: 'text-dark-200 bg-white/[0.04] border-white/[0.06]', ping: false },
+  reset: { label: 'Reset', orb: 'idle', cls: 'text-dark-200 bg-[var(--chip-bg)] border-[var(--chip-border)]', ping: false },
 };
 
 export function SignalCard({ signal, isLive, rank, scanTime }: SignalCardProps) {
@@ -35,25 +35,25 @@ export function SignalCard({ signal, isLive, rank, scanTime }: SignalCardProps) 
   if (!signal.passesFilter) return null;
 
   return (
-    <div className={`${isTop ? 'animated-border rounded-2xl' : 'rounded-2xl border border-white/[0.07]'}`}>
+    <div className={`${isTop ? 'top-border rounded-2xl' : 'rounded-2xl border border-[var(--chip-border)]'}`}>
       <div
         className={`spotlight-card relative overflow-hidden rounded-[19px] glass-hover ${
-          isTop ? 'bg-[#0b0b13]' : 'bg-[#0b0b13]/80 backdrop-blur-xl'
+          isTop ? 'bg-[var(--card-bg)]' : 'bg-[var(--card-bg-soft)] backdrop-blur-xl'
         } ${confirmed ? 'ring-1 ring-emerald-400/40 shadow-[0_0_34px_-10px_rgba(52,211,153,0.4)]' : ''}`}
         style={{ '--spot-color': isTop ? 'rgba(52,211,153,0.12)' : 'rgba(52,211,153,0.07)' } as React.CSSProperties}
       >
         <div key={scanTime ?? 'initial'} className="refresh-flash h-full">
           {/* Card header */}
-          <div className="px-5 py-3 flex items-center justify-between border-b border-white/[0.05]">
+          <div className="px-5 py-3 flex items-center justify-between border-b border-[var(--divider)]">
             <div className="flex items-center gap-2.5">
               {rank !== undefined && (
                 <span
                   className={`text-[10px] font-extrabold font-mono px-1.5 py-0.5 rounded-md ${
                     rank === 1
-                      ? 'bg-gradient-to-r from-emerald-400/20 to-cyan-400/20 text-emerald-300 border border-emerald-400/30'
-                      : rank === 2
-                        ? 'bg-white/[0.04] text-dark-200 border border-white/[0.07]'
-                        : 'bg-white/[0.03] text-dark-400 border border-white/[0.06]'
+                    ? 'bg-gradient-to-r from-emerald-400/20 to-cyan-400/20 text-emerald-300 border border-emerald-400/30'
+                    : rank === 2
+                      ? 'bg-[var(--chip-bg)] text-dark-200 border border-[var(--chip-border)]'
+                      : 'bg-[var(--chip-bg)] text-dark-400 border border-[var(--chip-border)]'
                   }`}
                 >
                   #{rank}
@@ -69,7 +69,7 @@ export function SignalCard({ signal, isLive, rank, scanTime }: SignalCardProps) 
                 </span>
               )}
               {signal.quietScore > 0 && (
-                <span className="text-[10px] font-mono text-dark-200 bg-white/[0.04] px-1.5 py-0.5 rounded-md border border-white/[0.06] tabular-nums">
+                <span className="text-[10px] font-mono text-dark-200 bg-[var(--chip-bg)] px-1.5 py-0.5 rounded-md border border-[var(--chip-border)] tabular-nums">
                   {signal.quietScore.toFixed(1)}°
                 </span>
               )}
@@ -85,20 +85,20 @@ export function SignalCard({ signal, isLive, rank, scanTime }: SignalCardProps) 
           </div>
 
           {/* Market info */}
-          <div className="px-5 py-2.5 border-b border-white/[0.05] flex items-center justify-between">
+          <div className="px-5 py-2.5 border-b border-[var(--divider)] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-white">{signal.marketDisplayName}</span>
-              <span className="text-[10px] font-mono text-dark-300 bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.06]">
+              <span className="text-sm font-semibold text-dark-100">{signal.marketDisplayName}</span>
+              <span className="text-[10px] font-mono text-dark-300 bg-[var(--chip-bg)] px-1.5 py-0.5 rounded border border-[var(--chip-border)]">
                 {signal.marketSymbol}
               </span>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-dark-300 bg-white/[0.04] px-2 py-0.5 rounded-full border border-white/[0.07]">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-dark-300 bg-[var(--chip-bg)] px-2 py-0.5 rounded-full border border-[var(--chip-border)]">
               {signal.market}
             </span>
           </div>
 
           {/* Entry & Confirmation */}
-          <div className="px-5 py-3.5 border-b border-white/[0.05]">
+          <div className="px-5 py-3.5 border-b border-[var(--divider)]">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-dark-300">Entry Digit</span>

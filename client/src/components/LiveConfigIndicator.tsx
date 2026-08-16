@@ -19,7 +19,7 @@ export function LiveConfigIndicator() {
 
   return (
     <div
-      className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.07] backdrop-blur"
+      className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--chip-bg)] border border-[var(--chip-border)] backdrop-blur"
       title={`Live strategy config — polls /api/config ${cadenceLabel}`}
     >
       <StatusOrb status={orb} ping={orb === 'ok'} size="sm" />

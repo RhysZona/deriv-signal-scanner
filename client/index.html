@@ -5,11 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Deriv Signal Scanner</title>
+    <script>
+      // Apply the theme before first paint to avoid a dark/light flash:
+      // saved preference first, then the system's prefers-color-scheme.
+      try {
+        var saved = localStorage.getItem('scanner_theme');
+        var light = saved === 'light' ||
+          (saved === null && window.matchMedia('(prefers-color-scheme: light)').matches);
+        if (light) document.documentElement.classList.add('light');
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
-  <body class="bg-[#06060b] text-dark-100 antialiased">
+  <body class="text-dark-100 antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

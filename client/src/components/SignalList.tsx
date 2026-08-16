@@ -26,7 +26,7 @@ export function SignalList({ signals, liveUpdates, lastScanTime }: SignalListPro
           </span>
         </h2>
         <div className="flex items-center gap-2 text-[11px] font-mono text-dark-400 tabular-nums">
-          <span className="px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/[0.06]">
+          <span className="px-2 py-0.5 rounded-md bg-[var(--chip-bg)] border border-[var(--chip-border)]">
             {lastScanTime ? formatTime(lastScanTime) : '—'}
           </span>
         </div>

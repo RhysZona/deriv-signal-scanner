@@ -48,7 +48,7 @@ export function ScannerStatus({ connected, feedDegraded, lastScanTime, marketsCo
         {/* Next-scan countdown ring */}
         <div className="relative shrink-0">
           <svg width="52" height="52" viewBox="0 0 52 52" className="countdown-ring -rotate-90">
-            <circle cx="26" cy="26" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3.5" />
+            <circle cx="26" cy="26" r={RADIUS} fill="none" strokeWidth="3.5" style={{ stroke: 'var(--ring-track)' }} />
             <circle
               cx="26"
               cy="26"
