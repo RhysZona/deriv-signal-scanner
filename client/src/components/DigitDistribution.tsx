@@ -1,5 +1,6 @@
 import type { DigitStats, TradeType } from '../types';
 import { DEFAULT_QUIET_THRESHOLD, useStrategyConfig } from '../hooks/useStrategyConfig';
+import { useCountUp } from '../hooks/useCountUp';
 
 interface DigitDistributionProps {
   digits: DigitStats[];
@@ -29,35 +30,33 @@ export function DigitDistribution({
   // the marker is always visible and snaps to the live value once it arrives.
   const { config } = useStrategyConfig();
   const threshold = config?.quietThreshold ?? DEFAULT_QUIET_THRESHOLD;
-  const maxBarWidth = 100;
 
   return (
-    <div className="space-y-1">
-      {digits.map((stat) => {
+    <div className="space-y-1.5">
+      {digits.map((stat, i) => {
         const isRequired = required.includes(stat.digit);
         const isQuiet = quietDigits.some(c => c.digit === stat.digit);
         const isEntry = stat.digit === entryDigit;
         const isConfirmation = validConfirmationDigits.includes(stat.digit);
-        const barPercent = Math.min(stat.percentage / 20 * 100, 100); // scale: 20% = full bar
+        const barPercent = Math.min((stat.percentage / 20) * 100, 100); // scale: 20% = full bar
 
-        let barColor = 'bg-dark-400';
-        let labelColor = 'text-dark-200';
+        let barClass = 'bg-gradient-to-r from-white/[0.07] to-white/[0.03]';
+        let labelClass = 'text-dark-200';
+        let glow = '';
 
         if (isEntry) {
-          barColor = 'bg-emerald-500';
-          labelColor = 'text-emerald-300';
+          barClass = 'bg-gradient-to-r from-emerald-400 to-teal-300';
+          labelClass = 'text-emerald-300';
+          glow = 'shadow-[0_0_16px_-2px_rgba(52,211,153,0.55)]';
         } else if (isQuiet && isRequired) {
-          barColor = 'bg-emerald-700/60';
-          labelColor = 'text-emerald-400';
-        } else if (isConfirmation && isRequired) {
-          barColor = 'bg-emerald-700/30';
-          labelColor = 'text-emerald-400/60';
+          barClass = 'bg-gradient-to-r from-emerald-500/70 to-emerald-400/40';
+          labelClass = 'text-emerald-400/90';
         } else if (isConfirmation) {
-          barColor = 'bg-blue-700/40';
-          labelColor = 'text-blue-400';
+          barClass = 'bg-gradient-to-r from-sky-500/60 to-sky-400/35';
+          labelClass = 'text-sky-400';
         } else if (isRequired && !isQuiet) {
-          barColor = 'bg-red-700/50';
-          labelColor = 'text-red-400';
+          barClass = 'bg-gradient-to-r from-red-500/70 to-red-400/40';
+          labelClass = 'text-red-400';
         }
 
         const showIndicator =
@@ -67,46 +66,85 @@ export function DigitDistribution({
           '';
 
         return (
-          <div key={stat.digit} className="flex items-center gap-2 group">
-            <span className={`w-4 text-xs font-mono font-bold text-right ${labelColor}`}>
-              {stat.digit}
-            </span>
-            <div className="flex-1 h-5 bg-dark-700 rounded-sm overflow-hidden relative digit-bar-glow">
-              <div
-                className={`h-full rounded-sm transition-all duration-500 ${barColor}`}
-                style={{ width: `${barPercent}%` }}
-              />
-              {/* Threshold line — positioned from the live quietThreshold config */}
-              <div
-                className="absolute top-0 bottom-0 w-px bg-red-400/60 z-10"
-                style={{ left: `${(threshold / 20) * 100}%` }}
-              />
-            </div>
-            <span className="w-12 text-[10px] font-mono text-right text-dark-300 tabular-nums">
-              {stat.percentage.toFixed(1)}%
-            </span>
-            {showIndicator && (
-              <span className="w-4 text-xs text-center">{showIndicator}</span>
-            )}
-          </div>
+          <DigitRow
+            key={stat.digit}
+            index={i}
+            stat={stat}
+            barClass={barClass}
+            labelClass={labelClass}
+            glow={glow}
+            showIndicator={showIndicator}
+            threshold={threshold}
+          />
         );
       })}
+
       {/* Legend */}
-      <div className="flex items-center gap-3 pt-2 text-[9px] text-dark-400">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded bg-emerald-500" /> Entry
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded bg-emerald-700/60" /> Quiet ✓
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded bg-red-700/50" /> Active ✗
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded bg-blue-700/40" /> Confirm
-        </span>
-        <span className="border-l border-dark-600 pl-2 text-dark-500">| {threshold}%</span>
+      <div className="flex items-center gap-2.5 pt-2 text-[9px] text-dark-300 flex-wrap">
+        <LegendDot cls="bg-gradient-to-r from-emerald-400 to-teal-300" label="Entry" />
+        <LegendDot cls="bg-emerald-500/60" label="Quiet" />
+        <LegendDot cls="bg-red-500/60" label="Active" />
+        <LegendDot cls="bg-sky-500/60" label="Confirm" />
+        <span className="border-l border-white/[0.07] pl-2.5 font-mono text-dark-400 tabular-nums">| {threshold.toFixed(1)}%</span>
       </div>
     </div>
+  );
+}
+
+function DigitRow({
+  index,
+  stat,
+  barClass,
+  labelClass,
+  glow,
+  showIndicator,
+  threshold,
+}: {
+  index: number;
+  stat: DigitStats;
+  barClass: string;
+  labelClass: string;
+  glow: string;
+  showIndicator: string;
+  threshold: number;
+}) {
+  const barPercent = Math.min((stat.percentage / 20) * 100, 100);
+  const pct = useCountUp(stat.percentage);
+
+  return (
+    <div
+      className="flex items-center gap-2 group"
+      style={{ animationDelay: `${index * 45}ms` }}
+    >
+      <span className={`w-4 text-xs font-mono font-bold text-right tabular-nums ${labelClass}`}>
+        {stat.digit}
+      </span>
+      <div className="flex-1 h-5 rounded-md bg-white/[0.04] overflow-hidden relative border border-white/[0.04]">
+        <div
+          className={`h-full rounded-md transition-all duration-700 ease-out ${barClass} ${glow}`}
+          style={{ width: `${barPercent}%` }}
+        />
+        {/* Threshold line — positioned from the live quietThreshold config */}
+        <div
+          className="absolute top-0 bottom-0 w-px bg-red-400/50 z-10"
+          style={{ left: `${(threshold / 20) * 100}%` }}
+        >
+          <div className="absolute -top-0.5 -translate-x-1/2 w-1 h-1 rounded-full bg-red-400/80" />
+        </div>
+      </div>
+      <span className="w-11 text-[10px] font-mono text-right text-dark-300 tabular-nums">
+        {pct.toFixed(1)}%
+      </span>
+      <span className="w-3 text-xs text-center">{showIndicator}</span>
+    </div>
+  );
+}
+
+function LegendDot({ cls, label }: { cls: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`w-2 h-2 rounded-sm ${cls}`} />
+      {label}
+    </span>
   );
 }

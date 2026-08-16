@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
 import { useStrategyConfig } from '../hooks/useStrategyConfig';
+import { useNow } from '../hooks/useNow';
 import { formatTimeAgo } from '../lib/time';
+import { StatusOrb } from './StatusOrb';
 
 /**
  * Small live-config chip for the header: shows the scanner's quiet threshold
@@ -10,26 +11,19 @@ import { formatTimeAgo } from '../lib/time';
  */
 export function LiveConfigIndicator() {
   const { config, syncedAt, pollIntervalMs } = useStrategyConfig();
-  // Re-render each second so the "Xs ago" countdown stays up-to-date.
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useNow(1000);
 
   const stale = syncedAt !== null && now - syncedAt > pollIntervalMs * 2.5;
-  const dotClass = syncedAt === null || stale
-    ? 'bg-amber-500 animate-pulse'
-    : 'bg-emerald-500 shadow-sm shadow-emerald-500/50';
+  const orb = syncedAt === null || stale ? 'warn' : 'ok';
   const cadenceLabel = `every ${(pollIntervalMs / 1000).toFixed(0)}s`;
 
   return (
     <div
-      className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-700/60 border border-dark-600"
+      className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.07] backdrop-blur"
       title={`Live strategy config — polls /api/config ${cadenceLabel}`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
-      <span className="text-[10px] font-mono font-semibold text-dark-200">
+      <StatusOrb status={orb} ping={orb === 'ok'} size="sm" />
+      <span className="text-[10px] font-mono font-semibold text-dark-100">
         ≤{config?.quietThreshold ?? '—'}%
       </span>
       <span className="text-[10px] text-dark-400">

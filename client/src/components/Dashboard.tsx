@@ -2,10 +2,12 @@ import type { ScanResult, TradeSetup } from '../types';
 import { EmptyState } from './EmptyState';
 import { SignalList } from './SignalList';
 import { SidePanel } from './SidePanel';
+import { HeroStats } from './HeroStats';
 
 interface DashboardProps {
   connected: boolean;
   feedDegraded: boolean;
+  isReconnecting: boolean;
   scanResult: ScanResult | null;
   liveUpdates: TradeSetup[] | null;
   lastScanTime: number | null;
@@ -15,6 +17,7 @@ interface DashboardProps {
 export function Dashboard({
   connected,
   feedDegraded,
+  isReconnecting,
   scanResult,
   liveUpdates,
   lastScanTime,
@@ -24,11 +27,20 @@ export function Dashboard({
   const hasSignals = signals.length > 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      <HeroStats
+        connected={connected}
+        feedDegraded={feedDegraded}
+        isReconnecting={isReconnecting}
+        totalSignals={signals.length}
+        marketsCount={marketsCount}
+        lastScanTime={lastScanTime}
+      />
+
       {!hasSignals && <EmptyState connected={connected} />}
 
       {hasSignals && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
           <SignalList
             signals={signals}
             liveUpdates={liveUpdates}

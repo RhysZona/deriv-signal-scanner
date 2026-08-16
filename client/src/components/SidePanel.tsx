@@ -21,7 +21,7 @@ export function SidePanel({
   signals,
 }: SidePanelProps) {
   return (
-    <div className="xl:col-span-1 space-y-6">
+    <div className="lg:col-span-2 xl:col-span-1 space-y-5">
       <ScannerStatus
         connected={connected}
         feedDegraded={feedDegraded}
