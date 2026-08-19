@@ -64,6 +64,9 @@ app.get('/api/signals/stream', (req, res) => {
   });
   // Forward connection/feed-health changes so the UI can warn on a stalled feed.
   const unsubscribeStatus = derivConnection.onStatus((status) => sendSSE('status', status));
+  // Forward scanner rate-limit state changes so the UI can show retry countdown.
+  sendSSE('scanner_status', scanner.getRateLimitInfo());
+  const unsubscribeScannerStatus = scanner.onScannerStatus((info) => sendSSE('scanner_status', info));
 
   const hb = setInterval(() => {
     try {
@@ -77,6 +80,7 @@ app.get('/api/signals/stream', (req, res) => {
     clearInterval(hb);
     unsubscribe();
     unsubscribeStatus();
+    unsubscribeScannerStatus();
   });
 });
 
@@ -112,8 +116,8 @@ app.put('/api/config', (req, res) => {
   const body = req.body ?? {};
   const allowed: (keyof StrategyConfig)[] = [
     'quietThreshold', 'excludeDigits', 'lookbackTicks',
-    'confirmWithinTicks', 'scanIntervalMs', 'confirmedCooldownMs', 'marketRefreshMs',
-    'configPollMs',
+    'scanIntervalMs', 'marketRefreshMs',
+    'configPollMs', 'livePollIntervalMs', 'livePollCount',
   ];
   const patch: Partial<StrategyConfig> = {};
   for (const key of allowed) {

@@ -4,6 +4,8 @@ import type { ScanResult, TradeSetup } from '../types';
 interface SignalsState {
   connected: boolean;
   feedDegraded: boolean;
+  /** True when Deriv refuses the real-time ticks stream (polling fallback active). */
+  liveStreamBlocked: boolean;
   scanResult: ScanResult | null;
   liveUpdates: TradeSetup[] | null;
   lastScanTime: number | null;
@@ -11,18 +13,22 @@ interface SignalsState {
   error: string | null;
   /** True while the error handler's reconnect timer is counting down. */
   isReconnecting: boolean;
+  /** Epoch ms when the scanner's rate-limit backoff expires (0 = not rate-limited). */
+  rateLimitedUntil: number;
 }
 
 export function useSignals() {
   const [state, setState] = useState<SignalsState>({
     connected: false,
     feedDegraded: false,
+    liveStreamBlocked: false,
     scanResult: null,
     liveUpdates: null,
     lastScanTime: null,
     totalSignals: 0,
     error: null,
     isReconnecting: false,
+    rateLimitedUntil: 0,
   });
 
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -85,6 +91,7 @@ export function useSignals() {
             ...prev,
             connected: data.connected,
             feedDegraded: data.feedDegraded ?? false,
+            liveStreamBlocked: data.liveStreamBlocked ?? false,
           }));
         }
       } catch (e) {
@@ -92,9 +99,21 @@ export function useSignals() {
       }
     });
 
+    es.addEventListener('scanner_status', (event) => {
+      if (!mountedRef.current) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (typeof data.rateLimitedUntil === 'number') {
+          setState(prev => ({ ...prev, rateLimitedUntil: data.rateLimitedUntil }));
+        }
+      } catch {
+        // ignore parse errors
+      }
+    });
+
     es.addEventListener('error', () => {
       if (!mountedRef.current) return;
-      setState(prev => ({ ...prev, connected: false, feedDegraded: false, isReconnecting: true }));
+      setState(prev => ({ ...prev, connected: false, feedDegraded: false, liveStreamBlocked: false, isReconnecting: true, rateLimitedUntil: 0 }));
       es.close();
 
       // Reconnect after a delay

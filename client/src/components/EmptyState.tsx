@@ -21,7 +21,7 @@ export function EmptyState({ connected }: EmptyStateProps) {
       <h2 className="text-xl font-extrabold text-dark-100 tracking-tight mb-2">Scanning the markets</h2>
       <p className="text-sm text-dark-300 max-w-md mx-auto mb-6 leading-relaxed">
         {connected
-          ? 'No signals right now. The scanner re-analyzes every market every 30 seconds — quiet digits can appear at any tick.'
+          ? 'No signals right now. The scanner re-analyzes every market every 30 seconds.'
           : 'Connecting to the Deriv API to scan markets...'}
       </p>
       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--chip-bg)] border border-[var(--chip-border)] text-xs text-dark-300">

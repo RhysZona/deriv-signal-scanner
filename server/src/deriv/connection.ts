@@ -14,6 +14,8 @@ export interface ConnectionStatus {
   connected: boolean;
   /** True when we have subscriptions but ticks have stopped flowing. */
   feedDegraded: boolean;
+  /** True when Deriv refuses the whole `ticks` stream (ticks_history still works). */
+  liveStreamBlocked: boolean;
 }
 
 class DerivConnection {
@@ -244,7 +246,7 @@ class DerivConnection {
         console.warn(
           `[DerivWS] Live ticks stream refused for ${symbol} (${msg}). This connection ` +
           `can fetch historical data but not live ticks — signals keep scanning and ` +
-          `ranking, but live confirmation monitoring stays off until the stream is ` +
+          `ranking, but live entry monitoring stays off until the stream is ` +
           `available again.`,
         );
       }
@@ -300,13 +302,27 @@ class DerivConnection {
     }
   }
 
+  /** True when Deriv is refusing the whole `ticks` stream (history still works). */
+  isLiveStreamBlocked(): boolean {
+    return this.liveStreamBlocked;
+  }
+
+  /** True when we hold an active live `ticks` subscription for this symbol. */
+  isSymbolSubscribed(symbol: string): boolean {
+    return this.subscriptions.has(symbol);
+  }
+
   onStatus(handler: StatusHandler): () => void {
     this.statusHandlers.add(handler);
     return () => this.statusHandlers.delete(handler);
   }
 
   getStatus(): ConnectionStatus {
-    return { connected: this.isConnected, feedDegraded: this.feedDegraded };
+    return {
+      connected: this.isConnected,
+      feedDegraded: this.feedDegraded,
+      liveStreamBlocked: this.liveStreamBlocked,
+    };
   }
 
   private emitStatus() {

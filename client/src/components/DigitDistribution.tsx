@@ -7,7 +7,6 @@ interface DigitDistributionProps {
   tradeType: TradeType;
   entryDigit: number | null;
   quietDigits: DigitStats[];
-  validConfirmationDigits: number[];
 }
 
 const REQUIRED_DIGITS: Record<TradeType, number[]> = {
@@ -22,7 +21,6 @@ export function DigitDistribution({
   tradeType,
   entryDigit,
   quietDigits,
-  validConfirmationDigits,
 }: DigitDistributionProps) {
   const required = REQUIRED_DIGITS[tradeType];
   // Quiet threshold from the server config (polled live). Falls back to the
@@ -37,7 +35,6 @@ export function DigitDistribution({
         const isRequired = required.includes(stat.digit);
         const isQuiet = quietDigits.some(c => c.digit === stat.digit);
         const isEntry = stat.digit === entryDigit;
-        const isConfirmation = validConfirmationDigits.includes(stat.digit);
         const barPercent = Math.min((stat.percentage / 20) * 100, 100); // scale: 20% = full bar
 
         let barClass = 'bg-[var(--bar-idle)]';
@@ -47,13 +44,10 @@ export function DigitDistribution({
         if (isEntry) {
           barClass = 'bg-gradient-to-r from-emerald-400 to-teal-300';
           labelClass = 'text-emerald-300';
-          glow = 'shadow-[0_0_16px_-2px_rgba(52,211,153,0.55)]';
+          glow = 'shadow-[0_0_16px_-2px_rgba(52,211,153,0.55)] group-hover:shadow-[0_0_20px_-1px_rgba(52,211,153,0.85)]';
         } else if (isQuiet && isRequired) {
           barClass = 'bg-gradient-to-r from-emerald-500/70 to-emerald-400/40';
           labelClass = 'text-emerald-400/90';
-        } else if (isConfirmation) {
-          barClass = 'bg-gradient-to-r from-sky-500/60 to-sky-400/35';
-          labelClass = 'text-sky-400';
         } else if (isRequired && !isQuiet) {
           barClass = 'bg-gradient-to-r from-red-500/70 to-red-400/40';
           labelClass = 'text-red-400';
@@ -84,7 +78,6 @@ export function DigitDistribution({
         <LegendDot cls="bg-gradient-to-r from-emerald-400 to-teal-300" label="Entry" />
         <LegendDot cls="bg-emerald-500/60" label="Quiet" />
         <LegendDot cls="bg-red-500/60" label="Active" />
-        <LegendDot cls="bg-sky-500/60" label="Confirm" />
         <span className="border-l border-[var(--divider)] pl-2.5 font-mono text-dark-400 tabular-nums">| {threshold.toFixed(1)}%</span>
       </div>
     </div>

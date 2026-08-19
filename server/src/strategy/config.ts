@@ -15,16 +15,12 @@ export interface StrategyConfig {
    * to the active (frequent) ones.
    */
   quietThreshold: number;
-  /** Digits never used as entry/confirmation (payout-excluded on Deriv). */
+  /** Digits never used as entry (payout-excluded on Deriv). */
   excludeDigits: number[];
   /** How many historical ticks to analyse per market. */
   lookbackTicks: number;
-  /** After the entry digit hits, confirmation must occur within this many ticks. */
-  confirmWithinTicks: number;
   /** How often to re-run the full historical scan (ms). */
   scanIntervalMs: number;
-  /** How long a confirmed signal stays "confirmed" before auto-resetting (ms). */
-  confirmedCooldownMs: number;
   /** How often to refresh the dynamic market list from Deriv (ms). */
   marketRefreshMs: number;
   /**
@@ -32,6 +28,14 @@ export interface StrategyConfig {
    * the config sync cadence is tunable at runtime without a client redeploy.
    */
   configPollMs: number;
+  /**
+   * How often to poll `ticks_history` as a live-feed fallback when Deriv
+   * refuses the real-time `ticks` stream (ms). Keeps percentages moving and
+   * entry tracking alive on historical polling alone.
+   */
+  livePollIntervalMs: number;
+  /** How many recent ticks to request per fallback `ticks_history` poll. */
+  livePollCount: number;
 }
 
 function num(envKey: string, fallback: number): number {
@@ -54,14 +58,14 @@ function digitList(envKey: string, fallback: number[]): number[] {
 let config: StrategyConfig = {
   // STRAT_QUIET_THRESHOLD is the current name; STRAT_COLD_THRESHOLD stays as a
   // backward-compatible alias for the old "cold" wording.
-  quietThreshold: num('STRAT_QUIET_THRESHOLD', num('STRAT_COLD_THRESHOLD', 9.7)),
+  quietThreshold: num('STRAT_QUIET_THRESHOLD', num('STRAT_COLD_THRESHOLD', 9.8)),
   excludeDigits: digitList('STRAT_EXCLUDE_DIGITS', [0, 9]),
   lookbackTicks: num('STRAT_LOOKBACK_TICKS', 1000),
-  confirmWithinTicks: num('STRAT_CONFIRM_WITHIN_TICKS', 2),
   scanIntervalMs: num('STRAT_SCAN_INTERVAL_MS', 30_000),
-  confirmedCooldownMs: num('STRAT_CONFIRMED_COOLDOWN_MS', 10_000),
   marketRefreshMs: num('STRAT_MARKET_REFRESH_MS', 3_600_000),
   configPollMs: num('STRAT_CONFIG_POLL_MS', 15_000),
+  livePollIntervalMs: num('STRAT_LIVE_POLL_INTERVAL_MS', 2_000),
+  livePollCount: num('STRAT_LIVE_POLL_COUNT', 100),
 };
 
 export function getConfig(): StrategyConfig {

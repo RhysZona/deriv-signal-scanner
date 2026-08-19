@@ -6,8 +6,10 @@ import { MarketOverview } from './MarketOverview';
 interface SidePanelProps {
   connected: boolean;
   feedDegraded: boolean;
+  liveStreamBlocked: boolean;
   lastScanTime: number | null;
   marketsCount: number | null;
+  rateLimitedUntil: number;
   liveUpdates: TradeSetup[] | null;
   signals: TradeSetup[];
 }
@@ -15,8 +17,10 @@ interface SidePanelProps {
 export function SidePanel({
   connected,
   feedDegraded,
+  liveStreamBlocked,
   lastScanTime,
   marketsCount,
+  rateLimitedUntil,
   liveUpdates,
   signals,
 }: SidePanelProps) {
@@ -25,8 +29,10 @@ export function SidePanel({
       <ScannerStatus
         connected={connected}
         feedDegraded={feedDegraded}
+        liveStreamBlocked={liveStreamBlocked}
         lastScanTime={lastScanTime}
         marketsCount={marketsCount}
+        rateLimitedUntil={rateLimitedUntil}
       />
 
       {liveUpdates && liveUpdates.length > 0 && (

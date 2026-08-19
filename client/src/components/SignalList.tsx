@@ -16,6 +16,13 @@ function formatTime(timestamp: number): string {
 }
 
 export function SignalList({ signals, liveUpdates, lastScanTime }: SignalListProps) {
+  // Overlay live tick data onto the scan snapshot: for each ranked signal, use
+  // the freshest live setup (updated percentages + FSM status) when available,
+  // falling back to the scan's analysis snapshot.
+  const liveByKey = new Map(
+    (liveUpdates ?? []).map(u => [`${u.marketSymbol}-${u.tradeType}`, u]),
+  );
+
   return (
     <div className="lg:col-span-2 space-y-4">
       <div className="flex items-center justify-between px-1">
@@ -32,17 +39,23 @@ export function SignalList({ signals, liveUpdates, lastScanTime }: SignalListPro
         </div>
       </div>
       <div className="space-y-4">
-        {signals.map((signal, i) => (
-          <SignalCard
-            key={`${signal.marketSymbol}-${signal.tradeType}`}
-            signal={signal}
-            rank={i + 1}
-            scanTime={lastScanTime}
-            isLive={liveUpdates?.some(
-              u => u.marketSymbol === signal.marketSymbol && u.tradeType === signal.tradeType,
-            )}
-          />
-        ))}
+        {signals.map((signal, i) => {
+          const live = liveByKey.get(`${signal.marketSymbol}-${signal.tradeType}`);
+          // Live overlay updates percentages and status, but never overrides the
+          // scan snapshot's passesFilter — the header count and grid visibility
+          // are driven by the scan result, so a live re-analysis that drifts
+          // above the quiet threshold should not make the card vanish mid-cycle.
+          const merged = live ? { ...live, passesFilter: signal.passesFilter } : signal;
+          return (
+            <SignalCard
+              key={`${signal.marketSymbol}-${signal.tradeType}`}
+              signal={merged}
+              rank={i + 1}
+              scanTime={lastScanTime}
+              isLive={!!live}
+            />
+          );
+        })}
       </div>
     </div>
   );

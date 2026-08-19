@@ -50,7 +50,7 @@ interface TradeTypeConfig {
   type: TradeType;
   label: string;
   quietDigits: number[];
-  /** Given a candidate digit, does it confirm the trade? */
+  /** Informational — given a candidate digit, would it confirm/win this trade type? */
   confirmCondition: (d: number) => boolean;
   payoutTier: PayoutTier;
 }
@@ -113,18 +113,13 @@ function selectEntryDigit(quietDigits: DigitStats[]): number | null {
   return eligible.length > 0 ? eligible[0].digit : null;
 }
 
-// ─── Scoring ────────────────────────────────────────────────────────────────
+// ─── Confirm Digits (informational) ─────────────────────────────────────────
 
-/** Average distance below the quiet threshold – higher = quieter = stronger signal */
-function calculateQuietScore(quietDigits: DigitStats[]): number {
-  if (quietDigits.length === 0) return 0;
-  const { quietThreshold } = getConfig();
-  const total = quietDigits.reduce((sum, d) => sum + Math.max(0, quietThreshold - d.percentage), 0);
-  return +(total / quietDigits.length).toFixed(2);
-}
-
-// ─── Confirmation Digits ────────────────────────────────────────────────────
-
+/**
+ * Digits that would confirm/win this trade type, minus the configured
+ * exclusions. Purely informational — displayed on the signal cards so the
+ * trader knows what to look for; the platform never actually confirms.
+ */
 function getValidConfirmationDigits(config: TradeTypeConfig): number[] {
   const { excludeDigits } = getConfig();
   const valid: number[] = [];
@@ -133,6 +128,16 @@ function getValidConfirmationDigits(config: TradeTypeConfig): number[] {
     if (config.confirmCondition(d)) valid.push(d);
   }
   return valid;
+}
+
+// ─── Scoring ────────────────────────────────────────────────────────────────
+
+/** Average distance below the quiet threshold – higher = quieter = stronger signal */
+function calculateQuietScore(quietDigits: DigitStats[]): number {
+  if (quietDigits.length === 0) return 0;
+  const { quietThreshold } = getConfig();
+  const total = quietDigits.reduce((sum, d) => sum + Math.max(0, quietThreshold - d.percentage), 0);
+  return +(total / quietDigits.length).toFixed(2);
 }
 
 // ─── Market Analysis ────────────────────────────────────────────────────────
@@ -161,8 +166,6 @@ export function analyzeMarket(
       validConfirmationDigits = getValidConfirmationDigits(config);
     }
 
-    const status: TradeStatus = passesFilter ? 'watching_entry' : 'pending';
-
     // If all quiet digits are 0/9 and exempt, entryDigit is null → signal can't trade
     const effectiveStatus: TradeStatus = (passesFilter && entryDigit !== null)
       ? 'watching_entry'
@@ -177,66 +180,31 @@ export function analyzeMarket(
       allDigits: digits,
       quietDigits,
       entryDigit,
-      quietScore: passesFilter ? quietScore : 0,
       validConfirmationDigits: passesFilter ? validConfirmationDigits : [],
-      confirmationDigit: null,
+      quietScore: passesFilter ? quietScore : 0,
       status: effectiveStatus,
       entryTriggered: false,
-      ticksSinceEntry: 0,
-      confirmed: false,
-      confirmedAt: null,
+      entryTriggeredAt: null,
     };
   });
 }
 
-// ─── Live Confirmation Check ────────────────────────────────────────────────
+// ─── Live Entry Tracking ────────────────────────────────────────────────────
 
-export function checkConfirmation(setup: TradeSetup, tickDigit: number): TradeSetup {
-  const next = { ...setup };
-  const { confirmWithinTicks, confirmedCooldownMs } = getConfig();
-
-  switch (setup.status) {
-    case 'watching_entry':
-      if (tickDigit === setup.entryDigit) {
-        next.status = 'watching_confirmation';
-        next.entryTriggered = true;
-        next.ticksSinceEntry = 0;
-      }
-      break;
-
-    case 'watching_confirmation':
-      next.ticksSinceEntry = setup.ticksSinceEntry + 1;
-
-      if (setup.validConfirmationDigits.includes(tickDigit)) {
-        next.status = 'confirmed';
-        next.confirmed = true;
-        next.confirmationDigit = tickDigit;
-        next.confirmedAt = Date.now();
-      } else if (next.ticksSinceEntry >= confirmWithinTicks) {
-        // Failed to confirm within the window → reset
-        next.status = 'watching_entry';
-        next.entryTriggered = false;
-        next.ticksSinceEntry = 0;
-      }
-      break;
-
-    case 'confirmed':
-      // Auto-reset a stale confirmation so old cards don't linger forever.
-      if (setup.confirmedAt && Date.now() - setup.confirmedAt >= confirmedCooldownMs) {
-        next.status = 'watching_entry';
-        next.confirmed = false;
-        next.confirmedAt = null;
-        next.confirmationDigit = null;
-        next.entryTriggered = false;
-        next.ticksSinceEntry = 0;
-      }
-      break;
-
-    default:
-      break;
-  }
-
-  return next;
+/**
+ * Signal-only entry tracking. The platform never confirms trades — it only
+ * watches for the entry digit on live ticks so the UI can flash a brief
+ * "seen" pulse. The setup always stays in `watching_entry`; the next scan
+ * re-evaluates the signal from fresh data.
+ */
+export function trackEntryTick(setup: TradeSetup, tickDigit: number): TradeSetup {
+  if (setup.status !== 'watching_entry') return setup;
+  if (tickDigit !== setup.entryDigit) return setup;
+  return {
+    ...setup,
+    entryTriggered: true,
+    entryTriggeredAt: Date.now(),
+  };
 }
 
 // ─── Ranking ────────────────────────────────────────────────────────────────

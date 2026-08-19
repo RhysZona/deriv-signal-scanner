@@ -14,7 +14,7 @@ const MIN_FETCH_TIMEOUT_MS = 1_500;
  * unreachable or hasn't loaded yet. Mirrors the server's own default so the
  * threshold marker degrades gracefully instead of disappearing.
  */
-export const DEFAULT_QUIET_THRESHOLD = 9.7;
+export const DEFAULT_QUIET_THRESHOLD = 9.8;
 
 export interface StrategyConfigState {
   /** Latest successfully fetched strategy config, or null before the first fetch. */
@@ -49,9 +49,7 @@ function configsEqual(a: StrategyConfig | null, b: StrategyConfig | null): boole
   return (
     a.quietThreshold === b.quietThreshold &&
     a.lookbackTicks === b.lookbackTicks &&
-    a.confirmWithinTicks === b.confirmWithinTicks &&
     a.scanIntervalMs === b.scanIntervalMs &&
-    a.confirmedCooldownMs === b.confirmedCooldownMs &&
     a.marketRefreshMs === b.marketRefreshMs &&
     a.configPollMs === b.configPollMs &&
     a.excludeDigits.length === b.excludeDigits.length &&

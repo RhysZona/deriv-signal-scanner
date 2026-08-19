@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 
 export default function App() {
-  const { connected, feedDegraded, isReconnecting, scanResult, liveUpdates, lastScanTime, totalSignals, marketsCount } = useSignals();
+  const { connected, feedDegraded, liveStreamBlocked, isReconnecting, scanResult, liveUpdates, lastScanTime, totalSignals, marketsCount, rateLimitedUntil } = useSignals();
 
   return (
     <div className="relative min-h-screen text-dark-100 antialiased">
@@ -18,20 +18,24 @@ export default function App() {
       <Header
         connected={connected}
         feedDegraded={feedDegraded}
+        liveStreamBlocked={liveStreamBlocked}
         isReconnecting={isReconnecting}
         lastScanTime={lastScanTime}
         totalSignals={totalSignals}
+        rateLimitedUntil={rateLimitedUntil}
       />
 
       <main className="relative z-10">
         <Dashboard
           connected={connected}
           feedDegraded={feedDegraded}
+          liveStreamBlocked={liveStreamBlocked}
           isReconnecting={isReconnecting}
           scanResult={scanResult}
           liveUpdates={liveUpdates}
           lastScanTime={lastScanTime}
           marketsCount={marketsCount}
+          rateLimitedUntil={rateLimitedUntil}
         />
       </main>
 

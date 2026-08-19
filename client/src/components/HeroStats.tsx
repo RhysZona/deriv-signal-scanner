@@ -4,14 +4,17 @@ import { StatusOrb } from './StatusOrb';
 import { useStrategyConfig } from '../hooks/useStrategyConfig';
 import { useCountUp } from '../hooks/useCountUp';
 import { useNow } from '../hooks/useNow';
+import { getFeedState, feedOrb } from '../lib/feedStatus';
 
 interface HeroStatsProps {
   connected: boolean;
   feedDegraded: boolean;
+  liveStreamBlocked: boolean;
   isReconnecting: boolean;
   totalSignals: number;
   marketsCount: number | null;
   lastScanTime: number | null;
+  rateLimitedUntil: number;
 }
 
 function Tile({
@@ -36,23 +39,34 @@ function Tile({
   );
 }
 
-export function HeroStats({ connected, feedDegraded, isReconnecting, totalSignals, marketsCount, lastScanTime }: HeroStatsProps) {
+export function HeroStats({ connected, feedDegraded, liveStreamBlocked, isReconnecting, totalSignals, marketsCount, lastScanTime, rateLimitedUntil }: HeroStatsProps) {
   const { config } = useStrategyConfig();
   const now = useNow(1000);
 
   const signalCount = Math.round(useCountUp(totalSignals));
   const marketCount = Math.round(useCountUp(marketsCount ?? 0));
-  const threshold = config?.quietThreshold ?? 9.7;
+  const threshold = config?.quietThreshold ?? 9.8;
   const thresholdDisplay = useCountUp(threshold);
 
+  const rateLimited = rateLimitedUntil > now;
   const scanIntervalMs = config?.scanIntervalMs ?? 30_000;
   const nextScanAt = lastScanTime !== null ? lastScanTime + scanIntervalMs : null;
-  const remainingMs = nextScanAt !== null ? Math.max(0, nextScanAt - now) : 0;
-  const progress = nextScanAt !== null ? 1 - remainingMs / scanIntervalMs : 0;
-  const remainingSec = nextScanAt !== null ? Math.ceil(remainingMs / 1000) : null;
+  const remainingMs = rateLimited ? Math.max(0, rateLimitedUntil - now) : (nextScanAt !== null ? Math.max(0, nextScanAt - now) : 0);
+  const progress = rateLimited ? 1 - remainingMs / (rateLimitedUntil - (rateLimitedUntil - remainingMs)) : (nextScanAt !== null ? 1 - remainingMs / scanIntervalMs : 0);
+  const remainingSec = remainingMs > 0 ? Math.ceil(remainingMs / 1000) : null;
 
-  const feedOrb: 'ok' | 'warn' | 'error' = !connected ? 'error' : feedDegraded ? 'warn' : 'ok';
-  const feedLabel = !connected ? (isReconnecting ? 'Reconnecting' : 'Offline') : feedDegraded ? 'Feed Issue' : 'Live';
+  const feedState = getFeedState({ connected, feedDegraded, liveStreamBlocked });
+  const orb = feedOrb(feedState);
+  const feedLabel =
+    feedState === 'offline'
+      ? isReconnecting
+        ? 'Reconnecting'
+        : 'Offline'
+      : feedState === 'polling'
+        ? 'Polling'
+        : feedState === 'stalled'
+          ? 'Stalled'
+          : 'Live';
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
@@ -113,8 +127,8 @@ export function HeroStats({ connected, feedDegraded, isReconnecting, totalSignal
         label="Deriv feed"
       >
         <div className="flex items-center gap-2">
-          <StatusOrb status={feedOrb} ping={feedOrb !== 'error'} size="md" />
-          <span className={`text-sm font-bold ${feedOrb === 'ok' ? 'text-emerald-300' : feedOrb === 'warn' ? 'text-amber-300' : 'text-red-400'}`}>
+          <StatusOrb status={orb} ping={orb !== 'error'} size="md" />
+          <span className={`text-sm font-bold ${orb === 'ok' ? 'text-emerald-300' : orb === 'warn' ? 'text-amber-300' : 'text-red-400'}`}>
             {feedLabel}
           </span>
         </div>
@@ -131,10 +145,19 @@ export function HeroStats({ connected, feedDegraded, isReconnecting, totalSignal
         className="col-span-2 sm:col-span-1"
       >
         <div className="flex items-center gap-3">
-          <CountdownRing progress={progress} />
-          <span className="text-xl font-extrabold font-mono tabular-nums text-dark-100">
-            {remainingSec !== null ? `${remainingSec}s` : '—'}
-          </span>
+          <CountdownRing progress={rateLimited ? 0 : progress} accent={rateLimited} />
+          {rateLimited ? (
+            <div className="flex flex-col">
+              <span className="text-sm font-extrabold font-mono tabular-nums text-amber-300">
+                {remainingSec}s
+              </span>
+              <span className="text-[9px] text-amber-400/70 font-medium uppercase tracking-wider">Rate limited</span>
+            </div>
+          ) : (
+            <span className="text-xl font-extrabold font-mono tabular-nums text-dark-100">
+              {remainingSec !== null ? `${remainingSec}s` : '—'}
+            </span>
+          )}
         </div>
       </Tile>
     </div>
@@ -144,9 +167,10 @@ export function HeroStats({ connected, feedDegraded, isReconnecting, totalSignal
 const RADIUS = 17;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-function CountdownRing({ progress }: { progress: number }) {
+function CountdownRing({ progress, accent = false }: { progress: number; accent?: boolean }) {
   const clamped = Math.min(1, Math.max(0, progress));
   const offset = CIRCUMFERENCE * (1 - clamped);
+  const gradId = accent ? 'ringGradAmber' : 'ringGrad';
   return (
     <svg width="44" height="44" viewBox="0 0 44 44" className="countdown-ring -rotate-90 shrink-0">
       <circle cx="22" cy="22" r={RADIUS} fill="none" strokeWidth="3" style={{ stroke: 'var(--ring-track)' }} />
@@ -155,17 +179,21 @@ function CountdownRing({ progress }: { progress: number }) {
         cy="22"
         r={RADIUS}
         fill="none"
-        stroke="url(#ringGrad)"
+        stroke={`url(#${gradId})`}
         strokeWidth="3"
         strokeLinecap="round"
         strokeDasharray={CIRCUMFERENCE}
         strokeDashoffset={offset}
-        style={{ filter: 'drop-shadow(0 0 4px rgba(52,211,153,0.6))' }}
+        style={{ filter: accent ? 'drop-shadow(0 0 4px rgba(251,191,36,0.6))' : 'drop-shadow(0 0 4px rgba(52,211,153,0.6))' }}
       />
       <defs>
         <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#34d399" />
           <stop offset="100%" stopColor="#22d3ee" />
+        </linearGradient>
+        <linearGradient id="ringGradAmber" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#f59e0b" />
         </linearGradient>
       </defs>
     </svg>

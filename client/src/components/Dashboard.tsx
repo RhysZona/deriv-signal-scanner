@@ -7,21 +7,25 @@ import { HeroStats } from './HeroStats';
 interface DashboardProps {
   connected: boolean;
   feedDegraded: boolean;
+  liveStreamBlocked: boolean;
   isReconnecting: boolean;
   scanResult: ScanResult | null;
   liveUpdates: TradeSetup[] | null;
   lastScanTime: number | null;
   marketsCount: number | null;
+  rateLimitedUntil: number;
 }
 
 export function Dashboard({
   connected,
   feedDegraded,
+  liveStreamBlocked,
   isReconnecting,
   scanResult,
   liveUpdates,
   lastScanTime,
   marketsCount,
+  rateLimitedUntil,
 }: DashboardProps) {
   const signals = scanResult?.rankedSignals ?? [];
   const hasSignals = signals.length > 0;
@@ -31,10 +35,12 @@ export function Dashboard({
       <HeroStats
         connected={connected}
         feedDegraded={feedDegraded}
+        liveStreamBlocked={liveStreamBlocked}
         isReconnecting={isReconnecting}
         totalSignals={signals.length}
         marketsCount={marketsCount}
         lastScanTime={lastScanTime}
+        rateLimitedUntil={rateLimitedUntil}
       />
 
       {!hasSignals && <EmptyState connected={connected} />}
@@ -50,8 +56,10 @@ export function Dashboard({
           <SidePanel
             connected={connected}
             feedDegraded={feedDegraded}
+            liveStreamBlocked={liveStreamBlocked}
             lastScanTime={lastScanTime}
             marketsCount={marketsCount}
+            rateLimitedUntil={rateLimitedUntil}
             liveUpdates={liveUpdates}
             signals={signals}
           />

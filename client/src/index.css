@@ -222,18 +222,26 @@
 }
 
 /* Prominence on hover for signal cards: a clean lift that brings the card
-   forward without any light effects over the content. Applies to all cards. */
+   forward without any light effects over the content. Applies to all cards.
+
+   Deliberately translate-only (NO scale): a non-integer scale resamples the
+   thin digit bars and tiny mono text, making them look soft. Combined with
+   backdrop-filter inside the transformed ancestor, Chromium re-rasterizes the
+   frosted layer every frame — the "blurry, as if paused" effect. will-change
+   promotes the card to its own compositor layer so the lift stays buttery. */
 .card-hover {
+  will-change: transform;
   transition:
     transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
     border-color 0.25s ease,
     box-shadow 0.25s ease;
 }
 .card-hover:hover {
-  transform: translateY(-3px) scale(1.015);
+  transform: translateY(-4px);
   border-color: var(--glass-border-hover);
   box-shadow:
-    0 18px 44px -18px rgba(0, 0, 0, 0.55),
+    0 20px 48px -20px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(52, 211, 153, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -300,16 +308,6 @@
 }
 .value-pop {
   animation: value-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Slow gradient sheen for the confirmed banner. */
-@keyframes sheen {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.sheen {
-  background-size: 200% 100%;
-  animation: sheen 2.8s linear infinite;
 }
 
 /* Entrance reveal. */

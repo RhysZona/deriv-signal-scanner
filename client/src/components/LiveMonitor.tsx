@@ -1,16 +1,21 @@
 import type { TradeSetup } from '../types';
 import { GlassCard } from './GlassCard';
+import { useNow } from '../hooks/useNow';
 
 interface LiveMonitorProps {
   liveUpdates: TradeSetup[];
 }
 
-const CONFIRM_WINDOW = 2; // confirmWithinTicks
+/** How long the entry-digit "seen" pulse stays lit (ms). */
+const SEEN_PULSE_MS = 4_000;
 
 export function LiveMonitor({ liveUpdates }: LiveMonitorProps) {
-  const active = liveUpdates.filter(
-    u => u.status === 'watching_entry' || u.status === 'watching_confirmation',
-  );
+  // Fast-ish ticker so the "seen" pulse fades on its own without new SSE events.
+  const now = useNow(200);
+
+  // Signal-only: we present the entry instruction and never confirm, so only
+  // watching_entry setups are shown here.
+  const active = liveUpdates.filter(u => u.status === 'watching_entry');
 
   if (active.length === 0) return null;
 
@@ -26,26 +31,33 @@ export function LiveMonitor({ liveUpdates }: LiveMonitorProps) {
             <span className="eq-bar w-[2.5px] h-full rounded-sm bg-emerald-400" style={{ animationDelay: '360ms' }} />
           </div>
           <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
-            Watching {active.length}
+            Waiting {active.length}
           </span>
         </div>
       </div>
 
       <div className="space-y-2">
         {active.map((setup) => (
-          <LiveRow key={`${setup.marketSymbol}-${setup.tradeType}-${setup.status}`} setup={setup} />
+          <LiveRow key={`${setup.marketSymbol}-${setup.tradeType}`} setup={setup} now={now} />
         ))}
       </div>
     </GlassCard>
   );
 }
 
-function LiveRow({ setup }: { setup: TradeSetup }) {
+function LiveRow({ setup, now }: { setup: TradeSetup; now: number }) {
   const high = setup.tradeType === 'OVER_3' || setup.tradeType === 'UNDER_6';
   const tradeColor = high ? 'text-emerald-300' : 'text-amber-300';
+  const seen = setup.entryTriggeredAt !== null && now - setup.entryTriggeredAt < SEEN_PULSE_MS;
 
   return (
-    <div className="animate-fade-in-up flex items-center justify-between px-3 py-2.5 rounded-xl bg-[var(--chip-bg)] border border-[var(--chip-border)] transition-colors hover:border-[var(--glass-border-hover)]">
+    <div
+      className={`animate-fade-in-up flex items-center justify-between px-3 py-2.5 rounded-xl border transition-colors ${
+        seen
+          ? 'bg-emerald-400/[0.08] border-emerald-400/40'
+          : 'bg-[var(--chip-bg)] border-[var(--chip-border)] hover:border-[var(--glass-border-hover)]'
+      }`}
+    >
       <div className="flex items-center gap-2.5 min-w-0">
         <span className="truncate text-xs font-semibold text-dark-100">{setup.marketDisplayName}</span>
         <span className="text-[9px] font-mono text-dark-300 bg-[var(--chip-bg)] px-1.5 py-0.5 rounded border border-[var(--chip-border)] shrink-0">
@@ -56,33 +68,24 @@ function LiveRow({ setup }: { setup: TradeSetup }) {
         </span>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
-        {setup.status === 'watching_entry' && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-dark-300">Wait for</span>
-            <span className="relative inline-flex items-center justify-center w-7 h-7 rounded-lg bg-sky-400/10 border border-sky-400/30 text-sm font-extrabold font-mono text-sky-300">
-              {setup.entryDigit}
-              <span className="absolute inset-0 rounded-lg border border-sky-400/40 animate-ping opacity-40" />
-            </span>
-          </div>
-        )}
-        {setup.status === 'watching_confirmation' && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-dark-300">Confirm</span>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: CONFIRM_WINDOW }).map((_, i) => (
-                <span
-                  key={i}
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    i < setup.ticksSinceEntry
-                      ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]'
-                      : 'bg-[var(--dot-bg)]'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="flex items-center gap-2 shrink-0">
+        <span className={`text-[10px] font-bold uppercase tracking-wider ${seen ? 'text-emerald-300' : 'text-dark-300'}`}>
+          {seen ? '✓ Seen' : 'Wait for'}
+        </span>
+        <span
+          className={`relative inline-flex items-center justify-center w-7 h-7 rounded-lg border text-sm font-extrabold font-mono transition-colors ${
+            seen
+              ? 'bg-emerald-400/15 border-emerald-400/50 text-emerald-300'
+              : 'bg-sky-400/10 border-sky-400/30 text-sky-300'
+          }`}
+        >
+          {setup.entryDigit}
+          <span
+            className={`absolute inset-0 rounded-lg border animate-ping opacity-40 ${
+              seen ? 'border-emerald-400/50' : 'border-sky-400/40'
+            }`}
+          />
+        </span>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import type { TradeType } from '../types';
 import { LiveConfigIndicator } from './LiveConfigIndicator';
 import { StatusOrb } from './StatusOrb';
 import { formatTimeAgo } from '../lib/time';
+import { getFeedState, feedOrb } from '../lib/feedStatus';
 import { useNow } from '../hooks/useNow';
 import { useCountUp } from '../hooks/useCountUp';
 import { useTheme } from '../hooks/useTheme';
@@ -9,9 +10,11 @@ import { useTheme } from '../hooks/useTheme';
 interface HeaderProps {
   connected: boolean;
   feedDegraded: boolean;
+  liveStreamBlocked: boolean;
   isReconnecting: boolean;
   lastScanTime: number | null;
   totalSignals: number;
+  rateLimitedUntil: number;
 }
 
 const tradeLabels: Record<TradeType, string> = {
@@ -21,10 +24,13 @@ const tradeLabels: Record<TradeType, string> = {
   UNDER_7: 'U7',
 };
 
-export function Header({ connected, feedDegraded, isReconnecting, lastScanTime, totalSignals }: HeaderProps) {
+export function Header({ connected, feedDegraded, liveStreamBlocked, isReconnecting, lastScanTime, totalSignals, rateLimitedUntil }: HeaderProps) {
   const now = useNow(1000);
   const signalCount = Math.round(useCountUp(totalSignals));
-  const feedStatus: 'ok' | 'warn' | 'error' = !connected ? 'error' : feedDegraded ? 'warn' : 'ok';
+  const feedState = getFeedState({ connected, feedDegraded, liveStreamBlocked });
+  const feedStatus = feedOrb(feedState);
+  const feedLabel =
+    feedState === 'polling' ? 'Polling' : feedState === 'stalled' ? 'Feed Stalled' : feedState === 'offline' ? 'Disconnected' : 'Live';
   const { theme, toggleTheme } = useTheme();
   const light = theme === 'light';
 
@@ -83,11 +89,20 @@ export function Header({ connected, feedDegraded, isReconnecting, lastScanTime, 
               {new Date(now).toLocaleTimeString('en-US', { hour12: false })}
             </div>
 
-            {lastScanTime && (
+            {rateLimitedUntil > now ? (
+              <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-400/[0.08] border border-amber-400/20">
+                <svg className="w-3 h-3 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
+                  Rate limited · retry {Math.ceil((rateLimitedUntil - now) / 1000)}s
+                </span>
+              </div>
+            ) : lastScanTime ? (
               <div className="hidden sm:flex items-center gap-1.5 text-xs text-dark-300">
                 <span className="text-[10px] uppercase tracking-wider text-dark-400">{formatTimeAgo(lastScanTime, now)}</span>
               </div>
-            )}
+            ) : null}
 
             <LiveConfigIndicator />
 
@@ -121,9 +136,7 @@ export function Header({ connected, feedDegraded, isReconnecting, lastScanTime, 
 
             <div className="flex items-center gap-2">
               <StatusOrb status={feedStatus} ping={feedStatus !== 'error'} />
-              <span className="text-xs font-semibold text-dark-100 hidden sm:inline">
-                {connected ? (feedDegraded ? 'Feed Issue' : 'Live') : 'Disconnected'}
-              </span>
+              <span className="text-xs font-semibold text-dark-100 hidden sm:inline">{feedLabel}</span>
             </div>
 
             {totalSignals > 0 && (

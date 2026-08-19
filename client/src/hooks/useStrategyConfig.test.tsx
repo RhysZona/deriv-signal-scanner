@@ -6,12 +6,10 @@ import type { StrategyConfigState } from './useStrategyConfig';
 type UseStrategyConfig = () => StrategyConfigState;
 
 const BASE_CONFIG: StrategyConfig = {
-  quietThreshold: 9.7,
+  quietThreshold: 9.8,
   excludeDigits: [0, 9],
   lookbackTicks: 1000,
-  confirmWithinTicks: 2,
   scanIntervalMs: 30_000,
-  confirmedCooldownMs: 10_000,
   marketRefreshMs: 3_600_000,
   configPollMs: 15_000,
 };

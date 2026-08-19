@@ -3,10 +3,7 @@ export type PayoutTier = 'high' | 'medium';
 
 export type TradeStatus =
   | 'pending'
-  | 'watching_entry'
-  | 'watching_confirmation'
-  | 'confirmed'
-  | 'reset';
+  | 'watching_entry';
 
 export interface DigitStats {
   digit: number;
@@ -23,15 +20,13 @@ export interface TradeSetup {
   allDigits: DigitStats[];
   quietDigits: DigitStats[];
   entryDigit: number | null;
-  quietScore: number;
+  /** Informational — which digits would confirm/win for this trade type (signal-only, never confirmed). */
   validConfirmationDigits: number[];
-  confirmationDigit: number | null;
+  quietScore: number;
   status: TradeStatus;
   entryTriggered: boolean;
-  ticksSinceEntry: number;
-  confirmed: boolean;
-  /** Epoch ms when confirmed; used for auto-reset of stale signals. */
-  confirmedAt: number | null;
+  /** Epoch ms when the entry digit last appeared on live ticks (drives the "seen" pulse). */
+  entryTriggeredAt: number | null;
 }
 
 export interface ScanResult {
@@ -51,9 +46,7 @@ export interface StrategyConfig {
   quietThreshold: number;
   excludeDigits: number[];
   lookbackTicks: number;
-  confirmWithinTicks: number;
   scanIntervalMs: number;
-  confirmedCooldownMs: number;
   marketRefreshMs: number;
   /** How often the client should re-poll /api/config (ms). */
   configPollMs: number;
