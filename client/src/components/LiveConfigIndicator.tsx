@@ -23,8 +23,14 @@ export function LiveConfigIndicator() {
       title={`Live strategy config — polls /api/config ${cadenceLabel}`}
     >
       <StatusOrb status={orb} ping={orb === 'ok'} size="sm" />
-      <span className="text-[10px] font-mono font-semibold text-dark-100">
+      <span className="text-[10px] font-mono font-semibold text-violet-300">
         ≤{config?.quietThreshold ?? '—'}%
+      </span>
+      <span className="text-[10px] font-mono font-semibold text-amber-300">
+        ≤{config?.oppositeThreshold ?? '—'}%
+      </span>
+      <span className="text-[10px] font-mono font-semibold text-emerald-300">
+        ≥{config?.dominantThreshold ?? '—'}%
       </span>
       <span className="text-[10px] text-dark-400">
         · {syncedAt !== null ? formatTimeAgo(syncedAt, now) : 'config…'}

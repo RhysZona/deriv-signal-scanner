@@ -46,7 +46,11 @@ export function HeroStats({ connected, feedDegraded, liveStreamBlocked, isReconn
   const signalCount = Math.round(useCountUp(totalSignals));
   const marketCount = Math.round(useCountUp(marketsCount ?? 0));
   const threshold = config?.quietThreshold ?? 9.8;
+  const oppositeThreshold = config?.oppositeThreshold ?? 10.1;
+  const dominantThreshold = config?.dominantThreshold ?? 10.7;
   const thresholdDisplay = useCountUp(threshold);
+  const oppositeDisplay = useCountUp(oppositeThreshold);
+  const dominantDisplay = useCountUp(dominantThreshold);
 
   const rateLimited = rateLimitedUntil > now;
   const scanIntervalMs = config?.scanIntervalMs ?? 30_000;
@@ -102,18 +106,29 @@ export function HeroStats({ connected, feedDegraded, liveStreamBlocked, isReconn
         </div>
       </Tile>
 
-      {/* Quiet threshold (live config) */}
+      {/* Thresholds (live config) */}
       <Tile
         icon={
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         }
-        label="Quiet line"
+        label="Thresholds"
         className="col-span-1"
       >
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-extrabold font-mono tabular-nums text-violet-300">≤{thresholdDisplay.toFixed(1)}%</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-dark-400 w-10">Quiet</span>
+            <span className="text-sm font-extrabold font-mono tabular-nums text-violet-300">≤{thresholdDisplay.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-dark-400 w-10">Opp</span>
+            <span className="text-sm font-extrabold font-mono tabular-nums text-amber-300">≤{oppositeDisplay.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-dark-400 w-10">Dom</span>
+            <span className="text-sm font-extrabold font-mono tabular-nums text-emerald-300">≥{dominantDisplay.toFixed(1)}%</span>
+          </div>
         </div>
       </Tile>
 
