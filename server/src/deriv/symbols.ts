@@ -49,9 +49,12 @@ export const FALLBACK_MARKETS: MarketSymbol[] = [
   { symbol: 'R_100', displayName: 'Volatility 100', market: 'Volatility', decimals: 2 },
   // Volatility Indices (1s)
   { symbol: '1HZ10V', displayName: 'Volatility 10 (1s)', market: 'Volatility', decimals: 2 },
+  { symbol: '1HZ15V', displayName: 'Volatility 15 (1s)', market: 'Volatility', decimals: 3 },
   { symbol: '1HZ25V', displayName: 'Volatility 25 (1s)', market: 'Volatility', decimals: 2 },
+  { symbol: '1HZ30V', displayName: 'Volatility 30 (1s)', market: 'Volatility', decimals: 3 },
   { symbol: '1HZ50V', displayName: 'Volatility 50 (1s)', market: 'Volatility', decimals: 2 },
   { symbol: '1HZ75V', displayName: 'Volatility 75 (1s)', market: 'Volatility', decimals: 2 },
+  { symbol: '1HZ90V', displayName: 'Volatility 90 (1s)', market: 'Volatility', decimals: 3 },
   { symbol: '1HZ100V', displayName: 'Volatility 100 (1s)', market: 'Volatility', decimals: 2 },
   // Jump Indices (correct codes)
   { symbol: 'JD10', displayName: 'Jump 10', market: 'Jump', decimals: 2 },

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { DigitStats, StrategyConfig } from './types.ts';
+import type { DigitStats } from './types.ts';
+import type { StrategyConfig } from './config.ts';
 
 // ── Mock getConfig ──────────────────────────────────────────────────────────
 
