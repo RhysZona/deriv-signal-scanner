@@ -1,4 +1,3 @@
-import type { TradeType } from '../types';
 import { LiveConfigIndicator } from './LiveConfigIndicator';
 import { StatusOrb } from './StatusOrb';
 import { formatTimeAgo } from '../lib/time';
@@ -16,13 +15,6 @@ interface HeaderProps {
   totalSignals: number;
   rateLimitedUntil: number;
 }
-
-const tradeLabels: Record<TradeType, string> = {
-  OVER_2: 'O2',
-  OVER_3: 'O3',
-  UNDER_6: 'U6',
-  UNDER_7: 'U7',
-};
 
 export function Header({ connected, feedDegraded, liveStreamBlocked, isReconnecting, lastScanTime, totalSignals, rateLimitedUntil }: HeaderProps) {
   const now = useNow(1000);
@@ -57,26 +49,6 @@ export function Header({ connected, feedDegraded, liveStreamBlocked, isReconnect
               </h1>
               <p className="text-[11px] text-dark-300 font-medium mt-0.5">Deriv Trading Signals</p>
             </div>
-          </div>
-
-          {/* Center: active trade badges */}
-          <div className="hidden md:flex items-center gap-2">
-            {(['OVER_3', 'UNDER_6', 'OVER_2', 'UNDER_7'] as TradeType[]).map((tt) => {
-              const high = tt === 'OVER_3' || tt === 'UNDER_6';
-              return (
-                <span
-                  key={tt}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border backdrop-blur ${
-                    high
-                      ? 'bg-emerald-400/[0.08] text-emerald-300 border-emerald-400/20'
-                      : 'bg-amber-400/[0.08] text-amber-300 border-amber-400/20'
-                  }`}
-                >
-                  <span className={`w-1 h-1 rounded-full ${high ? 'bg-emerald-400' : 'bg-amber-400'} shadow-[0_0_6px_currentColor]`} />
-                  {tradeLabels[tt]}
-                </span>
-              );
-            })}
           </div>
 
           {/* Right: status */}
