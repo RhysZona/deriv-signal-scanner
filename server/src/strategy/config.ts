@@ -17,6 +17,17 @@ export interface StrategyConfig {
   quietThreshold: number;
   /** Digits never used as entry (payout-excluded on Deriv). */
   excludeDigits: number[];
+  /**
+   * Even/Odd strategy: the maximum percentage for opposite-parity digits
+   * (odd digits when trading Even, even digits when trading Odd).
+   */
+  oppositeThreshold: number;
+  /**
+   * Even/Odd strategy: the minimum percentage for dominant-parity digits
+   * (even digits when trading Even, odd digits when trading Odd) and the
+   * minimum for the top-2 appearing digits.
+   */
+  dominantThreshold: number;
   /** How many historical ticks to analyse per market. */
   lookbackTicks: number;
   /** How often to re-run the full historical scan (ms). */
@@ -60,6 +71,8 @@ let config: StrategyConfig = {
   // backward-compatible alias for the old "cold" wording.
   quietThreshold: num('STRAT_QUIET_THRESHOLD', num('STRAT_COLD_THRESHOLD', 9.8)),
   excludeDigits: digitList('STRAT_EXCLUDE_DIGITS', [0, 9]),
+  oppositeThreshold: num('STRAT_OPPOSITE_THRESHOLD', 10.1),
+  dominantThreshold: num('STRAT_DOMINANT_THRESHOLD', 10.7),
   lookbackTicks: num('STRAT_LOOKBACK_TICKS', 1000),
   scanIntervalMs: num('STRAT_SCAN_INTERVAL_MS', 30_000),
   marketRefreshMs: num('STRAT_MARKET_REFRESH_MS', 3_600_000),

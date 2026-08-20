@@ -1,21 +1,28 @@
-import type { TradeSetup } from '../types';
+import type { TradeSetup, TradeType } from '../types';
 import { GlassCard } from './GlassCard';
 import { useNow } from '../hooks/useNow';
+import type { StrategyMode } from './SignalList';
+
+const OVER_UNDER_TYPES: TradeType[] = ['OVER_2', 'OVER_3', 'UNDER_6', 'UNDER_7'];
+const EVEN_ODD_TYPES: TradeType[] = ['EVEN', 'ODD'];
 
 interface LiveMonitorProps {
   liveUpdates: TradeSetup[];
+  strategyMode: StrategyMode;
 }
 
 /** How long the entry-digit "seen" pulse stays lit (ms). */
 const SEEN_PULSE_MS = 4_000;
 
-export function LiveMonitor({ liveUpdates }: LiveMonitorProps) {
+export function LiveMonitor({ liveUpdates, strategyMode }: LiveMonitorProps) {
   // Fast-ish ticker so the "seen" pulse fades on its own without new SSE events.
   const now = useNow(200);
 
+  // Filter by active strategy mode
+  const activeTypes = strategyMode === 'over-under' ? OVER_UNDER_TYPES : EVEN_ODD_TYPES;
   // Signal-only: we present the entry instruction and never confirm, so only
   // watching_entry setups are shown here.
-  const active = liveUpdates.filter(u => u.status === 'watching_entry');
+  const active = liveUpdates.filter(u => u.status === 'watching_entry' && activeTypes.includes(u.tradeType));
 
   if (active.length === 0) return null;
 
@@ -46,7 +53,7 @@ export function LiveMonitor({ liveUpdates }: LiveMonitorProps) {
 }
 
 function LiveRow({ setup, now }: { setup: TradeSetup; now: number }) {
-  const high = setup.tradeType === 'OVER_3' || setup.tradeType === 'UNDER_6';
+  const high = setup.tradeType === 'OVER_3' || setup.tradeType === 'UNDER_6' || setup.tradeType === 'EVEN' || setup.tradeType === 'ODD';
   const tradeColor = high ? 'text-emerald-300' : 'text-amber-300';
   const seen = setup.entryTriggeredAt !== null && now - setup.entryTriggeredAt < SEEN_PULSE_MS;
 

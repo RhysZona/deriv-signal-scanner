@@ -1,5 +1,5 @@
 import { DigitStats, TradeSetup, TradeType, TradeStatus } from './types.ts';
-import { getConfig } from './config.ts';
+import { getConfig, StrategyConfig } from './config.ts';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -84,6 +84,20 @@ export const TRADE_CONFIGS: TradeTypeConfig[] = [
     confirmCondition: (d) => d < 7,
     payoutTier: 'medium',
   },
+  {
+    type: 'EVEN',
+    label: 'Even',
+    quietDigits: [], // Even/Odd uses its own filter logic
+    confirmCondition: (d) => d % 2 === 0,
+    payoutTier: 'high',
+  },
+  {
+    type: 'ODD',
+    label: 'Odd',
+    quietDigits: [], // Even/Odd uses its own filter logic
+    confirmCondition: (d) => d % 2 === 1,
+    payoutTier: 'high',
+  },
 ];
 
 // ─── Step 1: Filter ─────────────────────────────────────────────────────────
@@ -140,6 +154,140 @@ function calculateQuietScore(quietDigits: DigitStats[]): number {
   return +(total / quietDigits.length).toFixed(2);
 }
 
+// ─── Even/Odd Strategy ─────────────────────────────────────────────────────
+
+/** Check if a digit is even */
+function isEven(d: number): boolean { return d % 2 === 0; }
+/** Check if a digit is odd */
+function isOdd(d: number): boolean { return d % 2 === 1; }
+
+/**
+ * Filter for Even/Odd strategy.
+ *
+ * Trading Even:
+ *  - All odd digits ≤ oppositeThreshold
+ *  - Most appearing AND second-most appearing are even, each ≥ dominantThreshold
+ *  - Least appearing AND second-least appearing are odd
+ *  - Fallback: if least & second-least span both parities → 3+ even digits ≥ dominantThreshold
+ *
+ * Trading Odd is the exact reverse.
+ */
+function checkEvenOddFilter(
+  digits: DigitStats[],
+  tradeType: 'EVEN' | 'ODD',
+  cfg: StrategyConfig,
+): DigitStats[] {
+  const dominantIsEven = tradeType === 'EVEN';
+  const oppositeCheck = dominantIsEven ? isOdd : isEven;
+  const dominantCheck = dominantIsEven ? isEven : isOdd;
+
+  // 1. All opposite-parity digits ≤ oppositeThreshold
+  for (const d of digits) {
+    if (oppositeCheck(d.digit) && d.percentage > cfg.oppositeThreshold) {
+      return [];
+    }
+  }
+
+  // 2. Sort all digits by percentage descending
+  const sorted = [...digits].sort((a, b) => b.percentage - a.percentage);
+
+  // 3. Most appearing AND second-most appearing must be dominant parity,
+  //    each ≥ dominantThreshold
+  if (sorted.length < 2) return [];
+  if (!dominantCheck(sorted[0].digit) || sorted[0].percentage < cfg.dominantThreshold) return [];
+  if (!dominantCheck(sorted[1].digit) || sorted[1].percentage < cfg.dominantThreshold) return [];
+
+  // 4. Least appearing AND second-least appearing must be opposite parity
+  const least = sorted[sorted.length - 1];
+  const secondLeast = sorted[sorted.length - 2];
+
+  const bothOpposite = oppositeCheck(least.digit) && oppositeCheck(secondLeast.digit);
+
+  if (!bothOpposite) {
+    // Fallback: 3+ dominant-parity digits must each be ≥ dominantThreshold
+    const dominantCount = digits.filter(d => dominantCheck(d.digit) && d.percentage >= cfg.dominantThreshold).length;
+    if (dominantCount < 3) return [];
+  }
+
+  // Return all digits as "passing" for Even/Odd (no quietDigits concept)
+  return [...digits];
+}
+
+/**
+ * Select entry digit for Even/Odd strategy.
+ *
+ * Even: entry is the least appearing odd digit.
+ * Odd: entry is the least appearing even digit.
+ */
+function selectEvenOddEntry(
+  digits: DigitStats[],
+  tradeType: 'EVEN' | 'ODD',
+): number | null {
+  const entryCheck = tradeType === 'EVEN' ? isOdd : isEven;
+  const candidates = digits
+    .filter(d => entryCheck(d.digit))
+    .sort((a, b) => a.percentage - b.percentage);
+  return candidates.length > 0 ? candidates[0].digit : null;
+}
+
+/**
+ * Confirmation digits for Even/Odd (informational).
+ *
+ * Even: any even digit apart from the second-most appearing digit.
+ * Odd: any odd digit apart from the second-most appearing digit.
+ */
+function getEvenOddConfirmationDigits(
+  digits: DigitStats[],
+  tradeType: 'EVEN' | 'ODD',
+): number[] {
+  const dominantCheck = tradeType === 'EVEN' ? isEven : isOdd;
+  const sorted = [...digits].sort((a, b) => b.percentage - a.percentage);
+  const secondMost = sorted.length >= 2 ? sorted[1].digit : -1;
+  return digits
+    .filter(d => dominantCheck(d.digit) && d.digit !== secondMost)
+    .sort((a, b) => a.digit - b.digit)
+    .map(d => d.digit);
+}
+
+/**
+ * Confirmation text for Even/Odd (informational).
+ *
+ * Even: "Any even digit (except the 2nd-most appearing digit)"
+ * Odd: "Two consecutive odd digits within 6 ticks"
+ */
+function getEvenOddConfirmationText(tradeType: 'EVEN' | 'ODD'): string {
+  if (tradeType === 'EVEN') {
+    return 'Any even digit (except the 2nd-most appearing digit)';
+  }
+  return 'Two consecutive odd digits within 6 ticks';
+}
+
+/**
+ * Score for Even/Odd signals.
+ *
+ * Higher score = stronger signal.
+ * Dominant score = average of the top-2 dominant-parity digits' percentages.
+ * Bonus: +0.5 for each additional dominant digit above dominantThreshold beyond 2.
+ */
+function calculateEvenOddScore(
+  digits: DigitStats[],
+  tradeType: 'EVEN' | 'ODD',
+  cfg: StrategyConfig,
+): number {
+  const dominantCheck = tradeType === 'EVEN' ? isEven : isOdd;
+  const dominant = digits
+    .filter(d => dominantCheck(d.digit))
+    .sort((a, b) => b.percentage - a.percentage);
+
+  if (dominant.length < 2) return 0;
+
+  const top2Avg = (dominant[0].percentage + dominant[1].percentage) / 2;
+  const bonusCount = dominant.filter(d => d.percentage >= cfg.dominantThreshold).length - 2;
+  const bonus = Math.max(0, bonusCount) * 0.5;
+
+  return +(top2Avg + bonus).toFixed(2);
+}
+
 // ─── Market Analysis ────────────────────────────────────────────────────────
 
 /** Run the full strategy analysis on a single market */
@@ -151,19 +299,35 @@ export function analyzeMarket(
   decimals: number,
 ): TradeSetup[] {
   const digits = analyzeFrequencies(prices, decimals);
+  const cfg = getConfig();
 
   return TRADE_CONFIGS.map((config) => {
-    const quietDigits = checkFilter(digits, config.quietDigits);
-    const passesFilter = quietDigits.length === config.quietDigits.length;
-
+    let passesFilter = false;
+    let quietDigits: DigitStats[] = [];
     let entryDigit: number | null = null;
     let quietScore = 0;
     let validConfirmationDigits: number[] = [];
+    let confirmationText = '';
 
-    if (passesFilter) {
-      entryDigit = selectEntryDigit(quietDigits);
-      quietScore = calculateQuietScore(quietDigits);
-      validConfirmationDigits = getValidConfirmationDigits(config);
+    if (config.type === 'EVEN' || config.type === 'ODD') {
+      // Even/Odd strategy
+      quietDigits = checkEvenOddFilter(digits, config.type, cfg);
+      passesFilter = quietDigits.length > 0;
+      if (passesFilter) {
+        entryDigit = selectEvenOddEntry(digits, config.type);
+        quietScore = calculateEvenOddScore(digits, config.type, cfg);
+        validConfirmationDigits = getEvenOddConfirmationDigits(digits, config.type);
+        confirmationText = getEvenOddConfirmationText(config.type);
+      }
+    } else {
+      // Over/Under strategy (existing logic)
+      quietDigits = checkFilter(digits, config.quietDigits);
+      passesFilter = quietDigits.length === config.quietDigits.length;
+      if (passesFilter) {
+        entryDigit = selectEntryDigit(quietDigits);
+        quietScore = calculateQuietScore(quietDigits);
+        validConfirmationDigits = getValidConfirmationDigits(config);
+      }
     }
 
     // If all quiet digits are 0/9 and exempt, entryDigit is null → signal can't trade
@@ -181,6 +345,7 @@ export function analyzeMarket(
       quietDigits,
       entryDigit,
       validConfirmationDigits: passesFilter ? validConfirmationDigits : [],
+      confirmationText: passesFilter ? confirmationText : '',
       quietScore: passesFilter ? quietScore : 0,
       status: effectiveStatus,
       entryTriggered: false,

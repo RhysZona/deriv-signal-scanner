@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import type { ScanResult, TradeSetup } from '../types';
 import { EmptyState } from './EmptyState';
-import { SignalList } from './SignalList';
+import { SignalList, StrategyMode } from './SignalList';
 import { SidePanel } from './SidePanel';
 import { HeroStats } from './HeroStats';
 
@@ -29,6 +30,7 @@ export function Dashboard({
 }: DashboardProps) {
   const signals = scanResult?.rankedSignals ?? [];
   const hasSignals = signals.length > 0;
+  const [strategyMode, setStrategyMode] = useState<StrategyMode>('over-under');
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
@@ -51,6 +53,8 @@ export function Dashboard({
             signals={signals}
             liveUpdates={liveUpdates}
             lastScanTime={lastScanTime}
+            strategyMode={strategyMode}
+            onStrategyModeChange={setStrategyMode}
           />
 
           <SidePanel
@@ -62,6 +66,7 @@ export function Dashboard({
             rateLimitedUntil={rateLimitedUntil}
             liveUpdates={liveUpdates}
             signals={signals}
+            strategyMode={strategyMode}
           />
         </div>
       )}

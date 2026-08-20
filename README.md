@@ -1,6 +1,6 @@
 # Deriv Signal Scanner
 
-A real-time trading signal scanner for Deriv's **Volatility Indices** and **Jump Indices**. It applies a custom **digit-frequency momentum strategy** to scan every market, rank the best setups, and stream live entry signals — so you only trade the highest-probability markets.
+A real-time trading signal scanner for Deriv's **Volatility Indices** and **Jump Indices**. It applies two complementary strategies — **Over/Under** (digit-range quietness) and **Even/Odd** (parity dominance) — to scan every market, rank the best setups, and stream live entry signals. A tab-based UI lets you switch between strategy views.
 
 ---
 
@@ -10,6 +10,7 @@ A real-time trading signal scanner for Deriv's **Volatility Indices** and **Jump
    - [Core Concept](#core-concept)
    - [Trade Types & Payout Tiers](#trade-types--payout-tiers)
    - [The 2-Step Process (Filter → Entry)](#the-2-step-process-filter--entry)
+   - [Even/Odd Strategy](#evenodd-strategy)
    - [Priority Ranking](#priority-ranking)
    - [Scenario Walkthroughs](#scenario-walkthroughs)
 2. [Project Architecture](#project-architecture)
@@ -40,12 +41,14 @@ Each Digit Options contract settles on the **last digit** of the price quote at 
 
 ### Trade Types & Payout Tiers
 
-| Tier | Trade Type | Quiet Digits (≤9.8%) | Bet | Typical Payout |
-|:---|:---|---:|:---|:---:|
-| 🥇 **High** | **Over 3** | 0, 1, 2, 3 | Next digit > 3 | ~$18.20 / $10 |
-| 🥇 **High** | **Under 6** | 6, 7, 8, 9 | Next digit < 6 | ~$18.20 / $10 |
-| 🥈 **Medium** | **Over 2** | 0, 1, 2 | Next digit > 2 | ~$14.80 / $10 |
-| 🥈 **Medium** | **Under 7** | 7, 8, 9 | Next digit < 7 | ~$14.80 / $10 |
+| Tier | Trade Type | Filter Condition | Bet | Typical Payout |
+|:---|:---|---|:---|:---:|
+| 🥇 **High** | **Over 3** | Digits 0–3 all ≤ 9.8% | Next digit > 3 | ~$18.20 / $10 |
+| 🥇 **High** | **Under 6** | Digits 6–9 all ≤ 9.8% | Next digit < 6 | ~$18.20 / $10 |
+| 🥇 **High** | **Even** | All odd ≤ 10.1%, top 2 even ≥ 10.7% | Next digit is even | ~$18.20 / $10 |
+| 🥇 **High** | **Odd** | All even ≤ 10.1%, top 2 odd ≥ 10.7% | Next digit is odd | ~$18.20 / $10 |
+| 🥈 **Medium** | **Over 2** | Digits 0–2 all ≤ 9.8% | Next digit > 2 | ~$14.80 / $10 |
+| 🥈 **Medium** | **Under 7** | Digits 7–9 all ≤ 9.8% | Next digit < 7 | ~$14.80 / $10 |
 
 ### CRITICAL: Digits 0 and 9 — Strategy Exclusion Rules
 
@@ -59,6 +62,8 @@ Digits `0` and `9` are part of this strategy in specific ways:
 | **Execution** | ❌ **Never** — the dashboard only presents the Entry digit and informational Confirm With digits; it does not confirm or trade. |
 
 **Important:** 0 and 9 ARE tradable digits on Deriv — the exclusion from entry in this strategy is a **personal trading rule**, not a Deriv limitation. They are always part of the frequency analysis data.
+
+**Note:** The Even/Odd strategy does **not** exclude 0 or 9 from entry — digits 0 and 9 can be entry digits for Even/Odd signals.
 
 ### The 2-Step Process (Filter → Entry)
 
@@ -111,12 +116,90 @@ The setup **never leaves `watching_entry`** — there is no confirmation phase, 
         (status never changes — no confirmation, no reset)
 ```
 
+### Even/Odd Strategy
+
+The Even/Odd strategy is a **parity-dominance** approach: instead of looking for quiet digits in a range, it identifies markets where one parity (even or odd) is clearly dominating the distribution.
+
+#### Filter Conditions
+
+**Trading Even:**
+
+| # | Condition | Threshold |
+|:--|:---|:---|
+| 1 | All odd digits (1, 3, 5, 7, 9) must be ≤ the opposite threshold | `oppositeThreshold` (default 10.1%) |
+| 2 | The **most appearing** and **second-most appearing** digits must both be **even**, each ≥ the dominant threshold | `dominantThreshold` (default 10.7%) |
+| 3 | The **least appearing** and **second-least appearing** digits must both be **odd** | — |
+| 3b | **Fallback:** If the two least appearing digits span both parities (e.g., one even, one odd), then **3+ even digits** must each be ≥ `dominantThreshold` | — |
+
+**Trading Odd** is the exact reverse:
+
+| # | Condition | Threshold |
+|:--|:---|:---|
+| 1 | All even digits (0, 2, 4, 6, 8) must be ≤ `oppositeThreshold` | 10.1% |
+| 2 | The most and second-most appearing digits must both be **odd**, each ≥ `dominantThreshold` | 10.7% |
+| 3 | The least and second-least appearing digits must both be **even** | — |
+| 3b | **Fallback:** If the two least appearing digits span both parities, then **3+ odd digits** must each be ≥ `dominantThreshold` | — |
+
+#### Entry Digits
+
+- **Even:** Entry = the **least appearing odd digit** (e.g., if odd digits are 1=8%, 3=7%, 5=9%, 7=6%, 9=8.5%, entry = **7**)
+- **Odd:** Entry = the **least appearing even digit**
+
+Unlike Over/Under, digits 0 and 9 are **not excluded** from entry in the Even/Odd strategy.
+
+#### Confirmation (informational — signal-only)
+
+The platform never confirms trades. Confirmation is presented as guidance:
+
+| Trade Type | Confirmation Rule |
+|:---|:---|
+| **Even** | Any even digit **except** the 2nd-most appearing digit |
+| **Odd** | **Two consecutive odd digits** within the next 6 ticks after entry |
+
+#### Scoring
+
+Even/Odd signals are scored by **dominance strength**:
+
+1. **Base score** = average of the top 2 dominant-parity digits' percentages
+2. **Bonus** = +0.5 for each additional dominant digit above `dominantThreshold` beyond the first 2
+
+Higher score = stronger parity skew = better signal.
+
+#### Even/Odd Scenario Walkthrough
+
+**Market:** Volatility 100 (R_100) — digits distribution:
+
+| Digit | % | Parity | Note |
+|:---|---:|:---|:---|
+| 0 | 13.0% | even | dominant |
+| 1 | 8.0% | odd | |
+| 2 | 13.0% | even | dominant |
+| 3 | 8.0% | odd | |
+| 4 | 7.0% | even | least appearing even |
+| 5 | 10.0% | odd | |
+| 6 | 12.0% | even | dominant |
+| 7 | 8.0% | odd | |
+| 8 | 11.0% | even | dominant |
+| 9 | 10.0% | odd | |
+
+**Filter check (Even):**
+- All odd ≤ 10.1%? 1(8), 3(8), 5(10), 7(8), 9(10) → ✅
+- Top 2 are even ≥ 10.7%? 0(13), 2(13) → ✅
+- Bottom 2 both odd? 3(8), 7(8) → ✅
+- **PASS**
+
+**Entry digit:** Least appearing odd = **3** or **7** (both 8.0%) — picks **7** (tie-breaks to the lower digit).
+
+**Confirmation:** Any even digit except the 2nd-most appearing (digit 2). So confirm with: 0, 4, 6, 8.
+
+**Score:** (13 + 13) / 2 = 13.0 + bonus (0, 2, 6, 8 all ≥ 10.7% → 4 qualifying, bonus = 2 × 0.5 = 1.0) = **14.0**
+
 ### Priority Ranking
 
 The scanner ranks passing signals for the dashboard:
 
-1. **High payout tier first** (Over 3, Under 6) before medium tier (Over 2, Under 7)
-2. **Within same tier, quieter = better** — signals are ranked by **quiet score** (descending), which is the average distance below the quiet threshold across all required quiet digits. E.g., a market where quiet digits average 7% below threshold beats one averaging 2% below.
+1. **High payout tier first** (Over 3, Under 6, Even, Odd) before medium tier (Over 2, Under 7)
+2. **Within same tier, higher score = better** — for Over/Under signals, this is the **quiet score** (average distance below the quiet threshold). For Even/Odd signals, this is the **dominance score** (average of top-2 dominant-parity percentages + bonus). A market with a stronger parity skew ranks higher.
 
 ### Scenario Walkthroughs
 
@@ -251,8 +334,10 @@ deriv-signal-scanner/
 Central configuration for every tunable parameter. All values have environment variable overrides.
 
 **Key fields:**
-- `quietThreshold` (default `9.8`) — percentage at or below which a digit is "quiet"
-- `excludeDigits` (default `[0, 9]`) — digits never used as entry
+- `quietThreshold` (default `9.8`) — percentage at or below which a digit is "quiet" (Over/Under only)
+- `excludeDigits` (default `[0, 9]`) — digits never used as entry (Over/Under only)
+- `oppositeThreshold` (default `10.1`) — max percentage for opposite-parity digits (Even/Odd only)
+- `dominantThreshold` (default `10.7`) — min percentage for dominant-parity digits (Even/Odd only)
 - `lookbackTicks` (default `1000`) — number of historical ticks per analysis
 - `scanIntervalMs` (default `30_000`) — full scan interval (ms)
 - `marketRefreshMs` (default `3_600_000`) — how often to refresh the market list from Deriv (ms)
@@ -260,14 +345,14 @@ Central configuration for every tunable parameter. All values have environment v
 - `livePollIntervalMs` (default `2_000`) — how often to poll `ticks_history` as a live-feed fallback when Deriv refuses the real-time `ticks` stream (ms)
 - `livePollCount` (default `100`) — how many recent ticks to request per fallback `ticks_history` poll
 
-**Env vars:** All fields are overridable via `STRAT_QUIET_THRESHOLD`, `STRAT_EXCLUDE_DIGITS` (comma-separated), `STRAT_LOOKBACK_TICKS`, `STRAT_LIVE_POLL_INTERVAL_MS`, `STRAT_LIVE_POLL_COUNT`, etc.
+**Env vars:** All fields are overridable via `STRAT_QUIET_THRESHOLD`, `STRAT_EXCLUDE_DIGITS` (comma-separated), `STRAT_OPPOSITE_THRESHOLD`, `STRAT_DOMINANT_THRESHOLD`, `STRAT_LOOKBACK_TICKS`, `STRAT_LIVE_POLL_INTERVAL_MS`, `STRAT_LIVE_POLL_COUNT`, etc.
 
 ### `strategy/types.ts`
 
 Defines the core data models:
 
 ```typescript
-type TradeType = 'OVER_2' | 'OVER_3' | 'UNDER_6' | 'UNDER_7';
+type TradeType = 'OVER_2' | 'OVER_3' | 'UNDER_6' | 'UNDER_7' | 'EVEN' | 'ODD';
 
 type TradeStatus =
   | 'pending'               // Initial state before analysis
@@ -286,10 +371,11 @@ interface TradeSetup {
   market: string;            // "Volatility" or "Jump"
   passesFilter: boolean;     // Did Step 1 pass?
   allDigits: DigitStats[];   // Full 0-9 digit distribution
-  quietDigits: DigitStats[];  // Only the digits that passed ≤threshold
+  quietDigits: DigitStats[];  // Only the digits that passed ≤threshold (Over/Under) or all digits (Even/Odd)
   entryDigit: number | null; // Selected entry digit (null if all quiet digits are 0/9)
   validConfirmationDigits: number[]; // Informational — digits that would confirm/win this trade type
-  quietScore: number;          // Avg distance below threshold (higher = quieter)
+  confirmationText: string;  // Informational text for Even/Odd confirmation rules
+  quietScore: number;          // Avg distance below threshold (Over/Under) or dominance score (Even/Odd)
   status: TradeStatus;       // Current state (pending | watching_entry)
   entryTriggered: boolean;   // Has the entry digit been seen on live ticks?
   entryTriggeredAt: number | null; // Epoch ms of the last entry-digit sighting (drives the "seen" pulse)
@@ -313,8 +399,8 @@ interface ScanResult {
 | `getLastDigit(price, decimals)` | Extract the last digit (0-9) from a price. Uses `toFixed(decimals)` to preserve trailing zeros (critical for markets quoting at 2-5 decimals). |
 | `observedDecimals(price)` | Count the decimal places actually present in a raw price value. |
 | `analyzeFrequencies(prices, decimals)` | Compute DigitStats[10] for an array of prices at the given precision. |
-| `TRADE_CONFIGS` | Array of 4 TradeTypeConfig objects defining quiet digits, confirm condition (which digits would confirm/win), and payout tier. |
-| `analyzeMarket(symbol, displayName, market, prices, decimals)` | Run the full strategy on one market. Returns TradeSetup[4] (one per trade type). |
+| `TRADE_CONFIGS` | Array of 6 TradeTypeConfig objects defining quiet digits, confirm condition (which digits would confirm/win), and payout tier. Covers Over/Under (4) and Even/Odd (2). |
+| `analyzeMarket(symbol, displayName, market, prices, decimals)` | Run the full strategy on one market. Returns TradeSetup[6] (one per trade type: OVER_3, UNDER_6, OVER_2, UNDER_7, EVEN, ODD). |
 | `trackEntryTick(setup, tickDigit)` | Signal-only entry tracking: marks `entryTriggered`/`entryTriggeredAt` when the entry digit appears; the setup stays in `watching_entry` forever (no confirmation). |
 | `rankSignals(results)` | Sort passing signals by payout tier (high first) then quiet score (descending). |
 
@@ -474,8 +560,10 @@ All configurable via environment variables (server-side):
 
 | Env Var | Default | Description |
 |:---|---|---|
-| `STRAT_QUIET_THRESHOLD` | `9.8` | Quiet digit threshold (%) |
-| `STRAT_EXCLUDE_DIGITS` | `0,9` | Digits excluded from entry |
+| `STRAT_QUIET_THRESHOLD` | `9.8` | Quiet digit threshold (%) — Over/Under only |
+| `STRAT_EXCLUDE_DIGITS` | `0,9` | Digits excluded from entry — Over/Under only |
+| `STRAT_OPPOSITE_THRESHOLD` | `10.1` | Max % for opposite-parity digits — Even/Odd only |
+| `STRAT_DOMINANT_THRESHOLD` | `10.7` | Min % for dominant-parity digits — Even/Odd only |
 | `STRAT_LOOKBACK_TICKS` | `1000` | Historical ticks per analysis |
 | `STRAT_SCAN_INTERVAL_MS` | `30000` | Full scan interval (ms) |
 | `STRAT_MARKET_REFRESH_MS` | `3600000` | Market list refresh interval (ms) |
@@ -540,7 +628,7 @@ This connects to Deriv's API, prints all available Volatility and Jump markets w
 
 ### Strategy Logic
 
-- **ALL strategy logic lives in `server/src/strategy/analyzer.ts`.** If a new trade type needs to be added, add it to `TRADE_CONFIGS` array. If the entry rules change, modify the functions there.
+- **ALL strategy logic lives in `server/src/strategy/analyzer.ts`.** Trade types are defined in the `TRADE_CONFIGS` array (currently: OVER_3, UNDER_6, OVER_2, UNDER_7, EVEN, ODD). Over/Under uses `checkFilter`/`selectEntryDigit`/`calculateQuietScore`; Even/Odd uses `checkEvenOddFilter`/`selectEvenOddEntry`/`calculateEvenOddScore`.
 - **All "magic numbers" live in `server/src/strategy/config.ts`.** Never hardcode thresholds, intervals, or counts in business logic.
 - **`getLastDigit` MUST use `toFixed(decimals)`** — never `toString()`, which drops trailing zeros.
 
@@ -621,7 +709,7 @@ The scanner self-corrects precision at runtime by checking the maximum decimal p
 1. **Rolling-window baseline** — The live rolling window is re-seeded from each scan's `ticks_history` snapshot, and the polling fallback dedupes by epoch (never re-feeding a tick already in the window). If modifying the live pipeline, keep that invariant: feeding the same tick twice would double-count it in the digit frequencies.
 2. **`getLastDigit` precision** — If modifying the digit extraction logic, always use `price.toFixed(decimals)` to preserve trailing zeros. This is the most common source of bugs.
 3. **`trackEntryTick` is signal-only** — The platform never confirms: `trackEntryTick` only records `entryTriggered`/`entryTriggeredAt` when the entry digit appears and never changes `status` (setups stay in `watching_entry` until the next scan re-evaluates them). Do NOT re-introduce a confirmation stage or status transitions; the UI's "✓ Seen" pulse is purely a client-side time window over `entryTriggeredAt`.
-4. **`rankSignals` order** — High payout (Over 3, Under 6) always beats medium payout (Over 2, Under 7), regardless of quiet score. Quiet score is a tiebreaker within the same tier.
+4. **`rankSignals` order** — High payout (Over 3, Under 6, Even, Odd) always beats medium payout (Over 2, Under 7), regardless of score. Score (quiet score for Over/Under, dominance score for Even/Odd) is a tiebreaker within the same tier.
 5. **`entryDigit = null` edge case** — If all quiet digits are 0 and 9 (both exempt), `entryDigit` is null and the signal stays in `pending` status even though `passesFilter` is true. The frontend handles this gracefully.
 6. **SSE reconnection** — The frontend auto-reconnects SSE on error with a 3s delay. The server re-subscribes all tick streams on WebSocket reconnect.
 7. **Market discovery fallback** — If Deriv's `active_symbols` endpoint is unreachable (geo-restricted in some environments), the scanner falls back to the static `FALLBACK_MARKETS` list, which covers the essential set.

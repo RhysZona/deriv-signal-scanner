@@ -2,6 +2,7 @@ import type { TradeSetup } from '../types';
 import { ScannerStatus } from './ScannerStatus';
 import { LiveMonitor } from './LiveMonitor';
 import { MarketOverview } from './MarketOverview';
+import type { StrategyMode } from './SignalList';
 
 interface SidePanelProps {
   connected: boolean;
@@ -12,6 +13,7 @@ interface SidePanelProps {
   rateLimitedUntil: number;
   liveUpdates: TradeSetup[] | null;
   signals: TradeSetup[];
+  strategyMode: StrategyMode;
 }
 
 export function SidePanel({
@@ -23,6 +25,7 @@ export function SidePanel({
   rateLimitedUntil,
   liveUpdates,
   signals,
+  strategyMode,
 }: SidePanelProps) {
   return (
     <div className="lg:col-span-2 xl:col-span-1 space-y-5">
@@ -36,7 +39,7 @@ export function SidePanel({
       />
 
       {liveUpdates && liveUpdates.length > 0 && (
-        <LiveMonitor liveUpdates={liveUpdates} />
+        <LiveMonitor liveUpdates={liveUpdates} strategyMode={strategyMode} />
       )}
 
       <MarketOverview signals={signals} />

@@ -1,4 +1,4 @@
-export type TradeType = 'OVER_2' | 'OVER_3' | 'UNDER_6' | 'UNDER_7';
+export type TradeType = 'OVER_2' | 'OVER_3' | 'UNDER_6' | 'UNDER_7' | 'EVEN' | 'ODD';
 
 export type TradeStatus =
   | 'pending'           // Initial state before analysis
@@ -28,6 +28,11 @@ export interface TradeSetup {
   // trade type (e.g. OVER_3 → 4-9). Shown on the cards only; the platform is
   // signal-only and never actually confirms.
   validConfirmationDigits: number[];
+
+  // Informational confirmation text — for Even/Odd trades where confirmation
+  // is a digit set (Even) or a temporal pattern (Odd: "2 consecutive odd
+  // digits in 6 ticks"). Displayed on the signal card.
+  confirmationText: string;
 
   // Scoring
   quietScore: number;         // Avg distance below the quiet threshold (higher = quieter = better)

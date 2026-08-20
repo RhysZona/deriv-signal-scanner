@@ -16,6 +16,8 @@ const TRADE_LABELS: Record<TradeType, { label: string; dot: string; text: string
   UNDER_6: { label: 'Under 6', dot: 'bg-emerald-400', text: 'text-emerald-300', chip: 'bg-emerald-400/10 border-emerald-400/20' },
   OVER_2: { label: 'Over 2', dot: 'bg-amber-400', text: 'text-amber-300', chip: 'bg-amber-400/10 border-amber-400/20' },
   UNDER_7: { label: 'Under 7', dot: 'bg-amber-400', text: 'text-amber-300', chip: 'bg-amber-400/10 border-amber-400/20' },
+  EVEN: { label: 'Even', dot: 'bg-blue-400', text: 'text-blue-300', chip: 'bg-blue-400/10 border-blue-400/20' },
+  ODD: { label: 'Odd', dot: 'bg-violet-400', text: 'text-violet-300', chip: 'bg-violet-400/10 border-violet-400/20' },
 };
 
 const STATUS_BADGES: Record<string, { label: string; orb: 'ok' | 'warn' | 'error' | 'idle'; cls: string; ping: boolean }> = {
@@ -26,7 +28,7 @@ const STATUS_BADGES: Record<string, { label: string; orb: 'ok' | 'warn' | 'error
 export function SignalCard({ signal, isLive, rank, scanTime }: SignalCardProps) {
   const style = TRADE_LABELS[signal.tradeType];
   const statusBadge = STATUS_BADGES[signal.status] ?? STATUS_BADGES.pending;
-  const isHighPayout = signal.tradeType === 'OVER_3' || signal.tradeType === 'UNDER_6';
+  const isHighPayout = signal.tradeType === 'OVER_3' || signal.tradeType === 'UNDER_6' || signal.tradeType === 'EVEN' || signal.tradeType === 'ODD';
   const isTop = rank === 1;
 
   // Retrigger the refresh-flash animation on each new scan without remounting
@@ -117,21 +119,27 @@ export function SignalCard({ signal, isLive, rank, scanTime }: SignalCardProps) 
                   <span className="text-2xl font-bold font-mono text-dark-400">—</span>
                 )}
                 {signal.entryDigit !== null && (
-                  <span className="text-[9px] text-dark-400 leading-tight">quietest<br />digit</span>
+                  <span className="text-[9px] text-dark-400 leading-tight">{signal.tradeType === 'EVEN' ? 'least odd' : signal.tradeType === 'ODD' ? 'least even' : 'quietest\ndigit'}</span>
                 )}
               </div>
             </div>
             <div>
-              <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-dark-300">Confirm With</span>
-              <div className="mt-1.5 flex items-center gap-1 flex-wrap">
-                {signal.validConfirmationDigits.map(d => (
-                  <span
-                    key={d}
-                    className="text-xs font-mono font-bold text-sky-300 bg-sky-400/10 border border-sky-400/20 px-1.5 py-0.5 rounded-md tabular-nums transition-colors duration-300 group-hover:bg-sky-400/20 group-hover:border-sky-400/40"
-                  >
-                    {d}
-                  </span>
-                ))}
+              <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-dark-300">Confirm</span>
+              <div className="mt-1.5">
+                {signal.confirmationText ? (
+                  <span className="text-[10px] text-dark-300 leading-tight block">{signal.confirmationText}</span>
+                ) : (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {signal.validConfirmationDigits.map(d => (
+                      <span
+                        key={d}
+                        className="text-xs font-mono font-bold text-sky-300 bg-sky-400/10 border border-sky-400/20 px-1.5 py-0.5 rounded-md tabular-nums transition-colors duration-300 group-hover:bg-sky-400/20 group-hover:border-sky-400/40"
+                      >
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

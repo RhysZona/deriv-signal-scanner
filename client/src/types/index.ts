@@ -1,4 +1,4 @@
-export type TradeType = 'OVER_2' | 'OVER_3' | 'UNDER_6' | 'UNDER_7';
+export type TradeType = 'OVER_2' | 'OVER_3' | 'UNDER_6' | 'UNDER_7' | 'EVEN' | 'ODD';
 export type PayoutTier = 'high' | 'medium';
 
 export type TradeStatus =
@@ -22,6 +22,8 @@ export interface TradeSetup {
   entryDigit: number | null;
   /** Informational — which digits would confirm/win for this trade type (signal-only, never confirmed). */
   validConfirmationDigits: number[];
+  /** Informational confirmation text for Even/Odd trades. */
+  confirmationText: string;
   quietScore: number;
   status: TradeStatus;
   entryTriggered: boolean;
@@ -45,6 +47,8 @@ export interface MarketSymbol {
 export interface StrategyConfig {
   quietThreshold: number;
   excludeDigits: number[];
+  oppositeThreshold: number;
+  dominantThreshold: number;
   lookbackTicks: number;
   scanIntervalMs: number;
   marketRefreshMs: number;
