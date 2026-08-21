@@ -3,7 +3,7 @@ import { GlassCard } from './GlassCard';
 import type { TradeSetup } from '../types';
 
 const MPESA_NUMBER = '0794016328';
-const MPESA_NAME = 'Alex Nyagitai';
+const MPESA_NAME = 'Alex Nyagitari';
 
 interface DonationCardProps {
   liveUpdates?: TradeSetup[] | null;
@@ -45,7 +45,7 @@ export function DonationCard({ liveUpdates }: DonationCardProps) {
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            Number copied — open M-Pesa to send
+            Number copied successfully
           </div>
         </div>
       )}
