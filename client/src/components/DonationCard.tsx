@@ -100,7 +100,7 @@ export function DonationCard({ liveUpdates }: DonationCardProps) {
         </div>
       </div>
 
-      <p className="text-[10px] text-dark-500 mt-3 text-center">
+      <p className="text-[11px] text-dark-300 mt-3 text-center">
         🙏 Thank you for your generosity
       </p>
     </GlassCard>
