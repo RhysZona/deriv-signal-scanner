@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: deriv-signal-scanner
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /ping
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set your Deriv app ID here (register at app.deriv.com)
+      - key: DERIV_APP_ID
+        sync: false
+      # Strategy overrides (optional — defaults work out of the box)
+      # - key: STRAT_QUIET_THRESHOLD
+      #   value: "9.8"
+      # - key: STRAT_LOOKBACK_TICKS
+      #   value: "1000"
+      # - key: STRAT_SCAN_INTERVAL_MS
+      #   value: "30000"

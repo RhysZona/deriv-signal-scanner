@@ -84,6 +84,9 @@ app.get('/api/signals/stream', (req, res) => {
   });
 });
 
+// ── Health-check ping (keeps free-tier alive) ────────────────────────────────
+app.get('/ping', (_req, res) => res.status(200).send('pong'));
+
 // ── REST snapshot ──────────────────────────────────────────────────────────
 
 app.get('/api/signals/latest', (_req, res) => {
