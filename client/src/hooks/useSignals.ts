@@ -75,6 +75,7 @@ export function useSignals() {
             ...prev,
             scanResult: data.scanResult,
             liveUpdates: data.liveUpdates ?? null,
+            lastScanTime: data.scanResult.timestamp ?? prev.lastScanTime,
           }));
         }
       } catch (e) {
