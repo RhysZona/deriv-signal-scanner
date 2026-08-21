@@ -577,7 +577,7 @@ All configurable via environment variables (server-side):
 ## Running the Project
 
 ### Prerequisites
-- Node.js ≥ 18
+- Node.js ≥ 20
 - npm
 
 ### Setup
