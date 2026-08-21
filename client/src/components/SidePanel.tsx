@@ -2,6 +2,7 @@ import type { TradeSetup } from '../types';
 import { ScannerStatus } from './ScannerStatus';
 import { LiveMonitor } from './LiveMonitor';
 import { MarketOverview } from './MarketOverview';
+import { DonationCard } from './DonationCard';
 import type { StrategyMode } from './SignalList';
 
 interface SidePanelProps {
@@ -43,6 +44,8 @@ export function SidePanel({
       )}
 
       <MarketOverview signals={signals} />
+
+      <DonationCard />
     </div>
   );
 }
