@@ -45,7 +45,7 @@ export function SidePanel({
 
       <MarketOverview signals={signals} />
 
-      <DonationCard />
+      <DonationCard liveUpdates={liveUpdates} />
     </div>
   );
 }

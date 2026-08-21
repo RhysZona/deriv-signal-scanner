@@ -1,11 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GlassCard } from './GlassCard';
+import type { TradeSetup } from '../types';
 
 const MPESA_NUMBER = '0794016328';
 const MPESA_NAME = 'Alex Nyagitai';
 
-export function DonationCard() {
+interface DonationCardProps {
+  liveUpdates?: TradeSetup[] | null;
+}
+
+export function DonationCard({ liveUpdates }: DonationCardProps) {
   const [copied, setCopied] = useState(false);
+  const [pulsing, setPulsing] = useState(false);
+  const prevCountRef = useRef(0);
+
+  // Pulse briefly when signal count changes
+  useEffect(() => {
+    const count = liveUpdates?.length ?? 0;
+    if (count > 0 && count !== prevCountRef.current) {
+      setPulsing(true);
+      const t = setTimeout(() => setPulsing(false), 1500);
+      prevCountRef.current = count;
+      return () => clearTimeout(t);
+    }
+    prevCountRef.current = count;
+  }, [liveUpdates]);
 
   const handleCopy = async () => {
     try {
@@ -18,7 +37,7 @@ export function DonationCard() {
   };
 
   return (
-    <GlassCard className="px-5 py-4 relative" hover={false}>
+    <GlassCard className={`px-5 py-4 relative transition-shadow duration-500 ${pulsing ? 'shadow-[0_0_20px_rgba(52,211,153,0.15)]' : ''}`} hover={false}>
       {/* Toast */}
       {copied && (
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full z-10 animate-in fade-in slide-in-from-bottom-2 duration-200">
