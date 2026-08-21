@@ -57,7 +57,9 @@ export function HeroStats({ connected, feedDegraded, liveStreamBlocked, isReconn
   const nextScanAt = lastScanTime !== null ? lastScanTime + scanIntervalMs : null;
   const remainingMs = rateLimited ? Math.max(0, rateLimitedUntil - now) : (nextScanAt !== null ? Math.max(0, nextScanAt - now) : 0);
   const progress = rateLimited ? 1 - remainingMs / (rateLimitedUntil - (rateLimitedUntil - remainingMs)) : (nextScanAt !== null ? 1 - remainingMs / scanIntervalMs : 0);
-  const remainingSec = remainingMs > 0 ? Math.ceil(remainingMs / 1000) : null;
+  const remainingSec = remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
+  // True when a scan has happened but the countdown has expired (waiting for next scan)
+  const scanExpired = lastScanTime !== null && remainingMs <= 0 && !rateLimited;
 
   const feedState = getFeedState({ connected, feedDegraded, liveStreamBlocked });
   const orb = feedOrb(feedState);
@@ -169,8 +171,8 @@ export function HeroStats({ connected, feedDegraded, liveStreamBlocked, isReconn
               <span className="text-[9px] text-amber-400/70 font-medium uppercase tracking-wider">Rate limited</span>
             </div>
           ) : (
-            <span className="text-xl font-extrabold font-mono tabular-nums text-dark-100">
-              {remainingSec !== null ? `${remainingSec}s` : '—'}
+            <span className={`text-xl font-extrabold font-mono tabular-nums ${scanExpired ? 'text-emerald-400 animate-pulse' : 'text-dark-100'}`}>
+              {lastScanTime !== null ? `${remainingSec}s` : '—'}
             </span>
           )}
         </div>

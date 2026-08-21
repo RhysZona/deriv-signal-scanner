@@ -158,6 +158,11 @@ class Scanner {
     if (Date.now() < this.rateLimitedUntil) {
       const remaining = Math.ceil((this.rateLimitedUntil - Date.now()) / 1000);
       console.log(`[Scanner] Rate-limited — skipping scan, retrying in ${remaining}s`);
+      // Re-emit the last result with a fresh timestamp so the client's
+      // countdown resets and doesn't get stuck on "—".
+      if (this.lastResult) {
+        this.emit({ ...this.lastResult, timestamp: Date.now() });
+      }
       return;
     }
 

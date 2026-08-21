@@ -84,8 +84,8 @@ export function ScannerStatus({ connected, feedDegraded, liveStreamBlocked, last
               </linearGradient>
             </defs>
           </svg>
-          <span className={`absolute inset-0 flex items-center justify-center text-[11px] font-mono font-bold tabular-nums ${rateLimited ? 'text-amber-300' : 'text-dark-100'}`}>
-            {remainingMs > 0 ? `${Math.ceil(remainingMs / 1000)}s` : '—'}
+          <span className={`absolute inset-0 flex items-center justify-center text-[11px] font-mono font-bold tabular-nums ${rateLimited ? 'text-amber-300' : (lastScanTime !== null && remainingMs <= 0 ? 'text-emerald-400 animate-pulse' : 'text-dark-100')}`}>
+            {lastScanTime !== null ? `${Math.ceil(Math.max(0, remainingMs) / 1000)}s` : '—'}
           </span>
         </div>
 
