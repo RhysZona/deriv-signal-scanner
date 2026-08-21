@@ -452,7 +452,7 @@ Orchestrates the scanning lifecycle:
 
 ### `deriv/connection.ts`
 
-WebSocket connection manager for Deriv's API (`wss://ws.derivws.com/websockets/v3?app_id=1089`).
+WebSocket connection manager for Deriv's public API (`wss://api.derivws.com/trading/v1/options/ws/public`).
 
 **Capabilities:**
 - **Auto-reconnect** with 3s delay on unexpected disconnect
@@ -571,7 +571,6 @@ All configurable via environment variables (server-side):
 | `STRAT_LIVE_POLL_INTERVAL_MS` | `2000` | Live-feed fallback: `ticks_history` poll interval when the real-time stream is refused (ms) |
 | `STRAT_LIVE_POLL_COUNT` | `100` | Live-feed fallback: recent ticks requested per poll |
 | `PORT` | `3001` | Server port |
-| `DERIV_APP_ID` | `1089` | Your Deriv application ID (register at app.deriv.com) |
 
 ---
 

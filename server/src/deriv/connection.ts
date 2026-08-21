@@ -1,7 +1,6 @@
 import WebSocket from 'ws';
 
-const DERIV_APP_ID = process.env.DERIV_APP_ID || '1089';
-const DERIV_WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${DERIV_APP_ID}`;
+const DERIV_WS_URL = 'wss://api.derivws.com/trading/v1/options/ws/public';
 const RECONNECT_DELAY = 3000;
 const REQUEST_TIMEOUT = 15000;
 /** If no tick arrives on any active subscription within this window, flag degraded. */
