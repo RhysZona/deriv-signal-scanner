@@ -9,6 +9,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Needed so npm install includes devDependencies (vite, tailwind, etc.) for the client build
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
       # Set your Deriv app ID here (register at app.deriv.com)
       - key: DERIV_APP_ID
         sync: false
