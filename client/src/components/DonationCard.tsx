@@ -18,7 +18,19 @@ export function DonationCard() {
   };
 
   return (
-    <GlassCard className="px-5 py-4" hover={false}>
+    <GlassCard className="px-5 py-4 relative" hover={false}>
+      {/* Toast */}
+      {copied && (
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full z-10 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-1.5 bg-emerald-500/90 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-lg shadow-emerald-500/20">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Number copied — open M-Pesa to send
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">☕</span>
         <h3 className="text-xs font-bold text-dark-200 uppercase tracking-[0.14em]">
