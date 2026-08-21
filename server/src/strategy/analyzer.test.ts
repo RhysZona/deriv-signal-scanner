@@ -251,7 +251,7 @@ describe('Even/Odd strategy — analyzeMarket', () => {
 
       expect(even.passesFilter).toBe(true);
       expect(even.validConfirmationDigits).toEqual([0, 2, 6, 8]);
-      expect(even.confirmationText).toBe('Any even digit (except the 2nd-most appearing digit)');
+      expect(even.confirmationText).toBe('Any even digit within 3 ticks');
     });
   });
 
@@ -267,7 +267,7 @@ describe('Even/Odd strategy — analyzeMarket', () => {
       const odd = results.find(r => r.tradeType === 'ODD')!;
 
       expect(odd.passesFilter).toBe(true);
-      expect(odd.confirmationText).toBe('Two consecutive odd digits within 6 ticks');
+      expect(odd.confirmationText).toBe('Two consecutive odd digits within 5 ticks');
     });
   });
 
@@ -353,7 +353,7 @@ describe('trackEntryTick', () => {
       quietDigits: [],
       entryDigit: 5,
       validConfirmationDigits: [0, 2, 4, 6, 8],
-      confirmationText: 'Any even digit (except the 2nd-most appearing digit)',
+      confirmationText: 'Any even digit within 3 ticks',
       quietScore: 11.0,
       status: 'watching_entry' as const,
       entryTriggered: false,

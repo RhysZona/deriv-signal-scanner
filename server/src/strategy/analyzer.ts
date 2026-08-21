@@ -252,14 +252,14 @@ function getEvenOddConfirmationDigits(
 /**
  * Confirmation text for Even/Odd (informational).
  *
- * Even: "Any even digit (except the 2nd-most appearing digit)"
- * Odd: "Two consecutive odd digits within 6 ticks"
+ * Even: "Any even digit within 3 ticks"
+ * Odd: "Two consecutive odd digits within 5 ticks"
  */
 function getEvenOddConfirmationText(tradeType: 'EVEN' | 'ODD'): string {
   if (tradeType === 'EVEN') {
-    return 'Any even digit (except the 2nd-most appearing digit)';
+    return 'Any even digit within 3 ticks';
   }
-  return 'Two consecutive odd digits within 6 ticks';
+  return 'Two consecutive odd digits within 5 ticks';
 }
 
 /**
