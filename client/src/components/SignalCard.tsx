@@ -108,21 +108,22 @@ export function SignalCard({ signal, isLive, rank, scanTime }: SignalCardProps) 
             <div>
               <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-dark-300">Entry</span>
               <div className="mt-1.5 flex items-center gap-2">
-                {signal.entryDigit !== null ? (() => {
-                  const isEO = signal.tradeType === 'EVEN' || signal.tradeType === 'ODD';
-                  return (
+                {signal.entryDigit !== null ? (
+                  signal.tradeType === 'EVEN' || signal.tradeType === 'ODD' ? (
                     <span
                       key={signal.entryDigit}
-                      className={`value-pop inline-flex items-center justify-center w-11 h-11 rounded-xl text-2xl font-extrabold font-mono transition-[box-shadow,border-color] duration-300 ${
-                        isEO
-                          ? 'bg-gradient-to-br from-amber-400/15 to-amber-300/10 border border-amber-400/25 text-amber-300 shadow-[0_0_18px_-4px_rgba(251,191,36,0.4)] group-hover:shadow-[0_0_28px_-2px_rgba(251,191,36,0.7)] group-hover:border-amber-400/60'
-                          : 'bg-gradient-to-br from-emerald-400/15 to-cyan-400/10 border border-emerald-400/25 text-emerald-300 shadow-[0_0_18px_-4px_rgba(52,211,153,0.4)] group-hover:shadow-[0_0_28px_-2px_rgba(52,211,153,0.7)] group-hover:border-emerald-400/60'
-                      }`}
+                      className="value-pop inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400/15 to-amber-300/10 border border-amber-400/25 text-2xl font-extrabold font-mono text-amber-300 shadow-[0_0_18px_-4px_rgba(251,191,36,0.4)] transition-[box-shadow,border-color] duration-300 group-hover:shadow-[0_0_28px_-2px_rgba(251,191,36,0.7)] group-hover:border-amber-400/60"
                     >
                       {signal.entryDigit}
                     </span>
-                  );
-                })()
+                  ) : (
+                    <span
+                      key={signal.entryDigit}
+                      className="value-pop inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400/15 to-cyan-400/10 border border-emerald-400/25 text-2xl font-extrabold font-mono text-emerald-300 shadow-[0_0_18px_-4px_rgba(52,211,153,0.4)] transition-[box-shadow,border-color] duration-300 group-hover:shadow-[0_0_28px_-2px_rgba(52,211,153,0.7)] group-hover:border-emerald-400/60"
+                    >
+                      {signal.entryDigit}
+                    </span>
+                  )
                 ) : (
                   <span className="text-2xl font-bold font-mono text-dark-400">—</span>
                 )}
