@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # ── Client ──────────────────────────────────────────────────────────
+      - name: Install client dependencies
+        run: cd client && npm install
+
+      - name: Client typecheck
+        run: cd client && npx tsc --noEmit
+
+      - name: Client tests
+        run: cd client && npm test
+
+      - name: Client build
+        run: cd client && npm run build
+
+      # ── Server ──────────────────────────────────────────────────────────
+      - name: Install server dependencies
+        run: cd server && npm install
+
+      - name: Server typecheck
+        run: cd server && npx tsc --noEmit
+
+      - name: Server tests
+        run: cd server && npm test
